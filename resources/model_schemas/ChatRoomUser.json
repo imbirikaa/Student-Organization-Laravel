@@ -1,0 +1,46 @@
+[
+    {
+        "name": "room_id",
+        "dbType": "integer,false",
+        "htmlType": "number",
+        "validations": "",
+        "searchable": false,
+        "fillable": false,
+        "primary": true,
+        "inForm": false,
+        "inIndex": false,
+        "inView": false
+    },
+    {
+        "name": "user_id",
+        "dbType": "integer,false",
+        "htmlType": "number",
+        "validations": "required",
+        "searchable": true,
+        "fillable": true,
+        "primary": false,
+        "inForm": true,
+        "inIndex": true,
+        "inView": true
+    },
+    {
+        "name": "role_in_room",
+        "dbType": "string",
+        "htmlType": "text",
+        "validations": "nullable|string|max:50",
+        "searchable": true,
+        "fillable": true,
+        "primary": false,
+        "inForm": true,
+        "inIndex": true,
+        "inView": true
+    },
+    {
+        "type": "relation",
+        "relation": "mt1,ChatRoom,room_id"
+    },
+    {
+        "type": "relation",
+        "relation": "mt1,User,user_id"
+    }
+]
