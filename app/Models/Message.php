@@ -2,22 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\ChatRoom;
-use App\Models\User;
 
 class Message extends Model
 {
-    protected $table = 'messages';
+    use HasFactory;
+    protected $fillable = ['room_id', 'sender_user_id', 'message', 'sent_at'];
 
-    public function room(): BelongsTo
+    public function room()
     {
-        return $this->belongsTo(ChatRoom::class, 'room_id', 'id');
+        return $this->belongsTo(ChatRoom::class);
     }
 
-    public function senderUser(): BelongsTo
+    public function sender()
     {
-        return $this->belongsTo(User::class, 'sender_user_id', 'id');
+        return $this->belongsTo(User::class, 'sender_user_id');
     }
 }

@@ -2,16 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\QuizQuestion;
 
 class QuizAnswer extends Model
 {
-    protected $table = 'quiz_answers';
+    use HasFactory;
+    protected $fillable = ['question_id', 'answer', 'is_correct'];
 
-    public function question(): BelongsTo
+    public function question()
     {
-        return $this->belongsTo(QuizQuestion::class, 'question_id', 'id');
+        return $this->belongsTo(QuizQuestion::class, 'question_id');
     }
 }

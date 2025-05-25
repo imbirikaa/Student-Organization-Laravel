@@ -2,30 +2,26 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use App\Models\Event;
-use App\Models\QuizQuestion;
-use App\Models\User;
 
 class Quiz extends Model
 {
-    protected $table = 'quizzes';
+    use HasFactory;
+    protected $fillable = ['event_id', 'required_correct_answers'];
 
-    public function event(): BelongsTo
+    public function event()
     {
-        return $this->belongsTo(Event::class, 'event_id', 'id');
+        return $this->belongsTo(Event::class);
     }
 
-    public function quizQuestions(): HasMany
+    public function questions()
     {
-        return $this->hasMany(QuizQuestion::class, 'quiz_id', 'id');
+        return $this->hasMany(QuizQuestion::class);
     }
 
-    public function users(): BelongsToMany
+    public function submissions()
     {
-        return $this->belongsToMany(User::class, 'quiz_submissions', 'quiz_id', 'user_id');
+        return $this->hasMany(QuizSubmission::class);
     }
 }

@@ -2,48 +2,33 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Models\Quiz;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class QuizController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return Quiz::all();
     }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        return Quiz::create($request->all());
     }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show($id)
     {
-        //
+        return Quiz::findOrFail($id);
     }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(Request $request, $id)
     {
-        //
+        $quiz = Quiz::findOrFail($id);
+        $quiz->update($request->all());
+        return $quiz;
     }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        //
+        Quiz::destroy($id);
+        return response()->noContent();
     }
 }

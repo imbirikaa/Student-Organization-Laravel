@@ -2,22 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\SupportTicket;
-use App\Models\User;
 
 class SupportTicketMessage extends Model
 {
-    protected $table = 'support_ticket_messages';
+    use HasFactory;
+    protected $fillable = ['ticket_id', 'sender_user_id', 'message'];
 
-    public function ticket(): BelongsTo
+    public function ticket()
     {
-        return $this->belongsTo(SupportTicket::class, 'ticket_id', 'id');
+        return $this->belongsTo(SupportTicket::class, 'ticket_id');
     }
 
-    public function senderUser(): BelongsTo
+    public function sender()
     {
-        return $this->belongsTo(User::class, 'sender_user_id', 'id');
+        return $this->belongsTo(User::class, 'sender_user_id');
     }
 }

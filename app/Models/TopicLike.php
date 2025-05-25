@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\User;
 use App\Models\ForumTopic;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class TopicLike extends Model
 {
+    use HasFactory;
     protected $table = 'topic_likes';
     public $incrementing = false;
 

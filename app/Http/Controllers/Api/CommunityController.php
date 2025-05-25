@@ -36,4 +36,8 @@ class CommunityController extends Controller
         Community::destroy($id);
         return response()->noContent();
     }
+    public function userCommunityCount()
+    {
+        return response()->json(['count' => Community::count()]);
+    }
 }

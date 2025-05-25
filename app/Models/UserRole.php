@@ -2,23 +2,23 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\User;
-use App\Models\Role;
 
 class UserRole extends Model
 {
-    protected $table = 'user_roles';
-    public $incrementing = false;
+    use HasFactory;
+    protected $fillable = ['user_id', 'role_id', 'assigned_date'];
 
-    public function user(): BelongsTo
+    public $timestamps = false;
+
+    public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+        return $this->belongsTo(User::class);
     }
 
-    public function role(): BelongsTo
+    public function role()
     {
-        return $this->belongsTo(Role::class, 'role_id', 'id');
+        return $this->belongsTo(Role::class);
     }
 }

@@ -2,22 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\User;
-use App\Models\Quiz;
 
 class QuizSubmission extends Model
 {
-    protected $table = 'quiz_submissions';
+    use HasFactory;
+    protected $fillable = ['quiz_id', 'user_id', 'submission_datetime', 'correct_count', 'is_passed'];
 
-    public function user(): BelongsTo
+    public function quiz()
     {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+        return $this->belongsTo(Quiz::class);
     }
 
-    public function quiz(): BelongsTo
+    public function user()
     {
-        return $this->belongsTo(Quiz::class, 'quiz_id', 'id');
+        return $this->belongsTo(User::class);
     }
 }

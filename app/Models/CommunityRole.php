@@ -9,9 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Models\Community;
 use App\Models\CommunityMembership;
 use App\Models\CommunityRolePermission;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class CommunityRole extends Model
 {
+    use HasFactory;
     protected $table = 'community_roles';
 
     public function community(): BelongsTo

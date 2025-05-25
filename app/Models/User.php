@@ -2,16 +2,30 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
 {
+    use HasFactory;
     protected $fillable = [
-        'first_name', 'last_name', 'email', 'phone', 'password', 'birth_date',
-        'school', 'department_id', 'graduate_date', 'nickname', 'about',
-        'profile_picture', 'membership_date', 'email_verified',
-        'phone_verified', 'is_active'
+        'first_name',
+        'last_name',
+        'email',
+        'phone',
+        'password',
+        'birth_date',
+        'school',
+        'department_id',
+        'graduate_date',
+        'nickname',
+        'about',
+        'profile_picture',
+        'membership_date',
+        'email_verified',
+        'phone_verified',
+        'is_active'
     ];
 
     protected $hidden = ['password'];
@@ -28,6 +42,6 @@ class User extends Authenticatable
 
     public function communities()
     {
-        return $this->hasMany(CommunityMembership::class);
+        return $this->belongsToMany(Community::class, 'community_memberships');
     }
 }

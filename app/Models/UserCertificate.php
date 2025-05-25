@@ -2,17 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\User;
 
 class UserCertificate extends Model
 {
-    protected $table = 'user_certificates';
-    protected $primaryKey = 'user_certificate_id';
+    use HasFactory;
+    protected $fillable = ['user_id', 'certificate_title', 'certificate_path', 'issue_date'];
 
-    public function user(): BelongsTo
+    public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+        return $this->belongsTo(User::class);
     }
 }

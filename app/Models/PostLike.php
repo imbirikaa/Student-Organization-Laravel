@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\ForumPost;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class PostLike extends Model
 {
+    use HasFactory;
     protected $table = 'post_likes';
     public $incrementing = false;
 

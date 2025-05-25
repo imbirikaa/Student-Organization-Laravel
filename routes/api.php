@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\BadgeController;
 use App\Http\Controllers\Api\CertificateController;
@@ -16,7 +17,20 @@ use App\Http\Controllers\Api\QuizController;
 use App\Http\Controllers\Api\QuizQuestionController;
 use App\Http\Controllers\Api\QuizAnswerController;
 use App\Http\Controllers\Api\QuizSubmissionController;
-use Illuminate\Http\Request;
+use App\Http\Controllers\Api\ChatRoomController;
+use App\Http\Controllers\Api\ChatRoomUserController;
+use App\Http\Controllers\Api\FriendshipController;
+use App\Http\Controllers\Api\MessageController;
+use App\Http\Controllers\Api\SupportTicketController;
+use App\Http\Controllers\Api\SupportTicketMessageController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\SystemLogController;
+use App\Http\Controllers\Api\UserRoleController;
+use App\Http\Controllers\Api\UserBadgeController;
+use App\Http\Controllers\Api\UserCertificateController;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,10 +42,6 @@ use Illuminate\Http\Request;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
-
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
 
 Route::apiResource('badges', BadgeController::class);
 Route::apiResource('certificates', CertificateController::class);
@@ -48,3 +58,14 @@ Route::apiResource('quizzes', QuizController::class);
 Route::apiResource('quiz-questions', QuizQuestionController::class);
 Route::apiResource('quiz-answers', QuizAnswerController::class);
 Route::apiResource('quiz-submissions', QuizSubmissionController::class);
+Route::apiResource('chat-rooms', ChatRoomController::class);
+Route::apiResource('chat-room-users', ChatRoomUserController::class);
+Route::apiResource('messages', MessageController::class);
+Route::apiResource('support-tickets', SupportTicketController::class);
+Route::apiResource('support-ticket-messages', SupportTicketMessageController::class);
+Route::apiResource('notifications', NotificationController::class);
+Route::apiResource('system-logs', SystemLogController::class);
+Route::apiResource('user-roles', UserRoleController::class);
+Route::apiResource('user-badges', UserBadgeController::class);
+Route::apiResource('friendships', FriendshipController::class);
+Route::apiResource('user-certificates', UserCertificateController::class);

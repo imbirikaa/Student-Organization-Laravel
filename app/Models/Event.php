@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Event extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'community_id', 'event', 'cover_image', 'description',
         'start_datetime', 'last_application_datetime', 'location',

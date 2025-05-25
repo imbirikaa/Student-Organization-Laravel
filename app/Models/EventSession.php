@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Models\Event;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class EventSession extends Model
 {
+    use HasFactory;
     protected $table = 'event_sessions';
 
     public function event(): BelongsTo

@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\User;
 use App\Models\Coupon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class UserCoupon extends Model
 {
+    use HasFactory;
     protected $table = 'user_coupons';
     public $incrementing = false;
 

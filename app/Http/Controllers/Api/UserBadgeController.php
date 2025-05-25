@@ -2,48 +2,33 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Models\UserBadge;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class UserBadgeController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return UserBadge::all();
     }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        return UserBadge::create($request->all());
     }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show($id)
     {
-        //
+        return UserBadge::findOrFail($id);
     }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(Request $request, $id)
     {
-        //
+        $badge = UserBadge::findOrFail($id);
+        $badge->update($request->all());
+        return $badge;
     }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        //
+        UserBadge::destroy($id);
+        return response()->noContent();
     }
 }

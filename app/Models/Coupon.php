@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\User;
 use App\Models\UserCoupon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Coupon extends Model
 {
+    use HasFactory;
     protected $table = 'coupons';
 
     public function createdBy(): BelongsTo

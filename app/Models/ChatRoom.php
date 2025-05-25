@@ -2,23 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use App\Models\ChatRoomUser;
-use App\Models\User;
 
 class ChatRoom extends Model
 {
-    protected $table = 'chat_rooms';
+    use HasFactory;
+    protected $fillable = ['room', 'type'];
 
-    public function chatRoomUser(): HasOne
+    public function users()
     {
-        return $this->hasOne(ChatRoomUser::class, 'room_id', 'id');
+        return $this->belongsToMany(User::class, 'chat_room_users');
     }
 
-    public function users(): BelongsToMany
+    public function messages()
     {
-        return $this->belongsToMany(User::class, 'messages', 'room_id', 'user_id');
+        return $this->hasMany(Message::class, 'room_id');
     }
 }

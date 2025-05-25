@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Certificate extends Model
 {
+    use HasFactory;
     protected $fillable = ['event_id', 'user_id', 'certificate', 'issue_date'];
 
     public function event()
