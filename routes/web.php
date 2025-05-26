@@ -54,3 +54,7 @@ Route::post('/logout', function (Request $request) {
 
     return response()->json(['message' => 'Logged out successfully']);
 });
+
+Route::get('/', function () {
+    return view('welcome');
+})->name('welcome');
