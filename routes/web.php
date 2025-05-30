@@ -1,8 +1,12 @@
 <?php
 
+use App\Http\Controllers\Api\UserController;
+use App\Models\Friendship;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
 
 
 Route::get('/sanctum/csrf-cookie', function () {
@@ -11,31 +15,40 @@ Route::get('/sanctum/csrf-cookie', function () {
 
 Route::get('/login', function () {
     return view('login');
-})->name('login');
+})->name('login.submit');
 
 Route::post('/login', function (Request $request) {
     $credentials = $request->only('email', 'password');
 
     if (Auth::attempt($credentials)) {
-        $user = \App\Models\User::where('email', $request->email)->first();
-        Auth::login($user);
-        $request->session()->regenerate();
-        return response()->json(['message' => 'Login successful']);
+        $user = Auth::user();
+
+        // ✅ This will now work
+        // $token = $user->createToken('auth_Ztoken')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login successful',
+            // 'access_token' => $token,
+            // 'token_type' => 'Bearer',
+            // 'user' => $user,
+        ]);
     }
 
-    return back()->withErrors([
-        'email' => 'The provided credentials are incorrect.',
-    ]);
-})->name('login.submit');
+    return response()->json([
+        'message' => 'The provided credentials are incorrect.'
+    ], 401);
+});
+
 
 Route::middleware('auth:sanctum')->get('/api/user', function (Request $request) {
     $user = $request->user();
     $user->community_count = 55;
     $user->topic_count = 55;
-    $user->friend_count = 55; // if implemented
+    $user->friend_count =  $user->allAcceptedFriendships()->count(); // if implemented
     $user->event_count = 55; // if exists
     return $user;
 });
+
 
 
 Route::get('/dashboard', function () {

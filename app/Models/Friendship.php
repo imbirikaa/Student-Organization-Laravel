@@ -3,23 +3,27 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\User;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Friendship extends Model
 {
-    use HasFactory;
-    protected $table = 'friendships';
-    public $incrementing = false;
+    protected $fillable = [
+        'user_id',
+        'friend_user_id',
+        'status',
+        'request_date',
+        'response_date',
+    ];
 
-    public function user(): BelongsTo
+    public $timestamps = false;
+
+    // Relations
+    public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function friendUser(): BelongsTo
+    public function friend()
     {
-        return $this->belongsTo(User::class, 'friend_user_id', 'id');
+        return $this->belongsTo(User::class, 'friend_user_id');
     }
 }

@@ -9,9 +9,16 @@ class Event extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'community_id', 'event', 'cover_image', 'description',
-        'start_datetime', 'last_application_datetime', 'location',
-        'certificate_type', 'min_sessions_for_certificate', 'verification_type'
+        'community_id',
+        'event',
+        'cover_image',
+        'description',
+        'start_datetime',
+        'last_application_datetime',
+        'location',
+        'certificate_type',
+        'min_sessions_for_certificate',
+        'verification_type'
     ];
 
     public function community()
@@ -27,5 +34,9 @@ class Event extends Model
     public function certificates()
     {
         return $this->hasMany(Certificate::class);
+    }
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'event_user')->withTimestamps();
     }
 }

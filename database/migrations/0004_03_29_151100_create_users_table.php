@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('school')->nullable();
             $table->foreignId('department_id')->nullable()->constrained('departments');
             $table->date('graduate_date')->nullable();
-            $table->string('nickname', 100)->nullable();
+            $table->string('nickname', 100)->unique();
             $table->text('about')->nullable();
             $table->string('profile_picture')->nullable();
             $table->dateTime('membership_date')->nullable();

@@ -30,6 +30,7 @@ use App\Models\UserCertificate;
 use App\Models\Badge;
 use App\Models\ChatRoomUser;
 use App\Models\City;
+use App\Models\Friendship;
 use App\Models\Role;
 
 class DatabaseSeeder extends Seeder
@@ -101,7 +102,14 @@ class DatabaseSeeder extends Seeder
 
         // 🎖️ User Relations
         // UserRole::factory(20)->create();
-        UserBadge::factory(20)->create();
+
         UserCertificate::factory(20)->create();
+
+        $this->call([
+            FriendshipSeeder::class,
+            SingleUserSeeder::class,
+            UserBadgeSeeder::class,
+            EventUserSeeder::class,
+        ]);
     }
 }
