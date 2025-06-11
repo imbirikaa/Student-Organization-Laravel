@@ -8,6 +8,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 
+Route::middleware(['auth:sanctum'])->get('/api/me', function (Request $request) {
+    $user = $request->user();
+    return response()->json([
+        'user' => $user,
+        'roles' => $user->getRoleNames(), // Returns array of role names
+        'permissions' => $user->getAllPermissions()->pluck('name'), // Returns array of permission names
+    ]);
+});
+
+Route::post('/api/test', [UserController::class, 'store']);
+
 
 Route::get('/sanctum/csrf-cookie', function () {
     return response()->noContent();
@@ -40,13 +51,9 @@ Route::post('/login', function (Request $request) {
 });
 
 
-Route::middleware('auth:sanctum')->get('/api/user', function (Request $request) {
-    $user = $request->user();
-    $user->community_count = 55;
-    $user->topic_count = 55;
-    $user->friend_count =  $user->allAcceptedFriendships()->count(); // if implemented
-    $user->event_count = 55; // if exists
-    return $user;
+Route::middleware('auth:sanctum')->get('/api/user', function () {
+    $user = auth()->user();
+    return app(UserController::class)->show($user->nickname);
 });
 
 

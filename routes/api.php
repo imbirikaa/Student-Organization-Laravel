@@ -43,6 +43,8 @@ use Illuminate\Support\Facades\Hash;
 |
 */
 
+
+
 Route::apiResource('badges', BadgeController::class);
 Route::apiResource('certificates', CertificateController::class);
 Route::apiResource('communities', CommunityController::class);

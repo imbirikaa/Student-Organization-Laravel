@@ -21,7 +21,7 @@ class SingleUserSeeder extends Seeder
             'phone' => '0912345678',
             'password' => Hash::make('password123'),
             'birth_date' => '1998-05-25',
-            'school' => 'Tripoli University',
+            'university_id' => '1',
             'department_id' => 1, // make sure department with ID 1 exists
             'graduate_date' => '2024-07-01',
             'nickname' => 'imbirika',

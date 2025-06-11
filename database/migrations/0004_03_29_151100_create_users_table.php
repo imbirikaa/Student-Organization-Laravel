@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('phone', 20)->nullable()->unique();
             $table->string('password');
             $table->date('birth_date')->nullable();
-            $table->string('school')->nullable();
+            $table->foreignId('university_id')->nullable()->constrained('universities');
             $table->foreignId('department_id')->nullable()->constrained('departments');
             $table->date('graduate_date')->nullable();
             $table->string('nickname', 100)->unique();

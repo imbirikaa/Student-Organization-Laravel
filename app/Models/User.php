@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
     protected $fillable = [
         'first_name',
         'last_name',
@@ -18,7 +19,7 @@ class User extends Authenticatable
         'phone',
         'password',
         'birth_date',
-        'school',
+        'university_id',
         'department_id',
         'graduate_date',
         'nickname',
@@ -37,10 +38,7 @@ class User extends Authenticatable
         return $this->belongsTo(Department::class);
     }
 
-    public function roles()
-    {
-        return $this->belongsToMany(Role::class, 'user_roles');
-    }
+    
 
     public function communities()
     {

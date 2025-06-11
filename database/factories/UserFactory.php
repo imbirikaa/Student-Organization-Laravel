@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Department;
+use App\Models\University;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -20,8 +21,15 @@ class UserFactory extends Factory
             'phone'          => $this->faker->phoneNumber,
             'password'       => bcrypt('password'),
             'birth_date'     => $this->faker->date('Y-m-d'),
-            'school'         => $this->faker->company,
-            'department_id'  => Department::inRandomOrder()->first()?->id ?? Department::factory(),
+            'university_id' => function () {
+                return University::inRandomOrder()->first()->id;
+            },
+            'department_id' => function (array $attributes) {
+                return Department::where('university_id', $attributes['university_id'])
+                    ->inRandomOrder()
+                    ->first()
+                    ?->id ?? Department::factory();
+            },
             'graduate_date'  => $this->faker->date('Y-m-d'),
             'nickname'       => Str::slug($this->faker->unique()->userName),
             'about'          => $this->faker->paragraph,

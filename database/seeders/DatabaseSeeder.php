@@ -37,25 +37,19 @@ class DatabaseSeeder extends Seeder
 {
     public function run()
     {
-        // 🧱 Independent tables
-        $roles = Role::factory()->count(5)->create();
-
-        $roles = Role::all();
-
-        User::all()->each(function ($user) use ($roles) {
-            $assigned = $roles->random(rand(1, 2));
-
-            foreach ($assigned as $role) {
-                UserRole::firstOrCreate(
-                    ['user_id' => $user->id, 'role_id' => $role->id],
-                    ['assigned_date' => now()]
-                );
-            }
-        });
         City::factory(10)->create();
+        // 🏛️ Universities and Department
+        $this->call(UniversitySeeder::class);
+        // 🧱 Independent tables
+
+
+        
+        $this->call([
+            SingleUserSeeder::class,
+        ]);
         User::factory(50)->create();
-        University::factory(5)->create();
-        Department::factory(10)->create();
+        // University::factory(5)->create();
+        // Department::factory(10)->create();
         Badge::factory(10)->create();
         CommunityRole::factory(5)->create();
         ForumCategory::factory(5)->create();
@@ -107,9 +101,10 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             FriendshipSeeder::class,
-            SingleUserSeeder::class,
             UserBadgeSeeder::class,
             EventUserSeeder::class,
+            RoleSeeder::class,
+            AdminSeeder::class,
         ]);
     }
 }
