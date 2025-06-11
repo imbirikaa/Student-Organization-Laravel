@@ -10,7 +10,7 @@ class EventController extends Controller
 {
     public function index()
     {
-        return Event::all();
+        return Event::paginate(5);
     }
 
     public function store(Request $request)
