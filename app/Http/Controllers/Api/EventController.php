@@ -18,21 +18,21 @@ class EventController extends Controller
         return Event::create($request->all());
     }
 
-    public function show($id)
+    public function show(Event $event)
     {
-        return Event::findOrFail($id);
+        $event->load('community');
+        return $event;
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, Event $event)
     {
-        $event = Event::findOrFail($id);
         $event->update($request->all());
         return $event;
     }
 
-    public function destroy($id)
+    public function destroy(Event $event)
     {
-        Event::destroy($id);
+        $event->delete();
         return response()->noContent();
     }
 }
