@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\SystemLogController;
 use App\Http\Controllers\Api\UserRoleController;
 use App\Http\Controllers\Api\UserBadgeController;
 use App\Http\Controllers\Api\UserCertificateController;
+
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -44,8 +45,11 @@ use Illuminate\Support\Facades\Hash;
 */
 
 // Route::get('/user/communities', [UserController::class, 'getUserCommunities']);
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+}); 
 
-Route::apiResource('badges', BadgeController::class);
+Route::apiResource('badges', BadgeController::class); 
 Route::apiResource('certificates', CertificateController::class);
 Route::apiResource('communities', CommunityController::class);
 Route::apiResource('community-memberships', CommunityMembershipController::class);
@@ -71,3 +75,4 @@ Route::apiResource('user-roles', UserRoleController::class);
 Route::apiResource('user-badges', UserBadgeController::class);
 Route::apiResource('friendships', FriendshipController::class);
 Route::apiResource('user-certificates', UserCertificateController::class);
+Route::middleware('auth:sanctum')->post('/communities/{community}/apply', [CommunityMembershipController::class, 'apply']);

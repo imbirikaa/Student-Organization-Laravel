@@ -6,22 +6,30 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+
 class Community extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'community', 'logo', 'about', 'mission', 'vision', 'founding_year',
-        'achievements', 'traditional_events', 'contact_email', 'sponsors', 'faq'
+        'creator_id', // <-- Add this
+        'community', 'logo', 'about', 'mission', 'vision',
+        'founding_year', 'achievements', 'traditional_events',
+        'contact_email', 'sponsors', 'faq',
     ];
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'creator_id');
+    }
 
     public function events()
     {
-        return $this->hasMany(Event::class);
+        return $this->hasMany(Event::class, 'community_id', 'id');
     }
 
-    public function members()
+    public function memberships()
     {
-        return $this->hasMany(CommunityMembership::class);
+        return $this->hasMany(CommunityMembership::class, 'community_id', 'id');
     }
 
     public function roles()
