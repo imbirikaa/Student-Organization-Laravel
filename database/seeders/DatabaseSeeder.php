@@ -43,21 +43,34 @@ class DatabaseSeeder extends Seeder
         // 🧱 Independent tables
 
 
-        
+
         $this->call([
             SingleUserSeeder::class,
+            CommunityRoleSeeder::class,
         ]);
         User::factory(50)->create();
         // University::factory(5)->create();
         // Department::factory(10)->create();
         Badge::factory(10)->create();
-        CommunityRole::factory(5)->create();
         ForumCategory::factory(5)->create();
         ChatRoom::factory(10)->create();
 
         // 🧱 Tables with foreign keys
-        Community::factory(10)->create();
-        CommunityMembership::factory(30)->create();
+        Community::factory(10)->create()->each(function ($community) {
+            // Assign a random existing user as the creator.
+            $creator = User::inRandomOrder()->first();
+            $community->creator_id = $creator->id;
+            $community->save();
+
+            // Create the membership link, making the creator the 'Kurucu' (Founder).
+            // This assumes a role with ID=1 is 'Kurucu'.
+            CommunityMembership::create([
+                'user_id' => $creator->id,
+                'community_id' => $community->id,
+                'community_role_id' => 1,
+                'status' => 'approved',
+            ]);
+        });
         Event::factory(20)->create();
         Certificate::factory(30)->create();
 

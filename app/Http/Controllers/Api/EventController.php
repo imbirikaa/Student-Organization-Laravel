@@ -24,6 +24,15 @@ class EventController extends Controller
         return $event;
     }
 
+    public function showByCommunity($communityId)
+    {
+        return response()->json(
+            Event::where('community_id', $communityId)->paginate(5)
+        );
+    }
+
+
+
     public function update(Request $request, Event $event)
     {
         $event->update($request->all());

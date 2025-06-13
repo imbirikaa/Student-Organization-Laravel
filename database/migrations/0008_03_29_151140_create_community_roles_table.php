@@ -11,8 +11,9 @@ return new class extends Migration
     {
         Schema::create('community_roles', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->foreignIdFor(Community::class)->constrained();
+            $table->foreignIdFor(Community::class)->nullable()->constrained('communities')->onDelete('cascade');
             $table->string('role', 100);
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }

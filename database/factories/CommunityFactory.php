@@ -2,24 +2,28 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class CommunityFactory extends Factory
 {
     public function definition()
     {
+        $community = $this->faker->unique()->company;
         return [
-            'community'          => $this->faker->company,
-            'logo'               => $this->faker->optional()->imageUrl(200, 200, 'business'),
-            'about'              => $this->faker->optional()->paragraph,
-            'mission'            => $this->faker->optional()->sentence,
-            'vision'             => $this->faker->optional()->sentence,
-            'founding_year'      => $this->faker->optional()->year,
-            'achievements'       => $this->faker->optional()->paragraph,
-            'traditional_events' => $this->faker->optional()->sentence,
-            'contact_email'      => $this->faker->optional()->companyEmail,
-            'sponsors'           => $this->faker->optional()->sentence,
-            'faq'                => $this->faker->optional()->paragraph,
+            'community'          => $community,
+            'logo'               => 'https://ui-avatars.com/api/?name=' . urlencode("$community") .
+                '&background=' . ltrim($this->faker->hexColor, '#') . '&color=ffffff',
+            'about'              => $this->faker->paragraph,
+            'mission'            => $this->faker->sentence,
+            'vision'             => $this->faker->sentence,
+            'founding_year'      => $this->faker->year,
+            'achievements'       => $this->faker->paragraph,
+            'traditional_events' => $this->faker->sentence,
+            'contact_email'      => $this->faker->companyEmail,
+            'sponsors'           => $this->faker->sentence,
+            'faq'                => $this->faker->paragraph,
+            'creator_id'         => User::factory()
         ];
     }
 }

@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\QuizAnswerController;
 use App\Http\Controllers\Api\QuizSubmissionController;
 use App\Http\Controllers\Api\ChatRoomController;
 use App\Http\Controllers\Api\ChatRoomUserController;
+use App\Http\Controllers\Api\CommunityRoleController;
 use App\Http\Controllers\Api\FriendshipController;
 use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\SupportTicketController;
@@ -50,6 +51,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::middleware('auth:sanctum')->get('/communities', [CommunityController::class, 'store']);
+Route::middleware('auth:sanctum')->post('/communities/{community}/roles', [CommunityRoleController::class, 'store']);
+
 
 Route::apiResource('badges', BadgeController::class);
 Route::apiResource('certificates', CertificateController::class);
@@ -57,6 +60,9 @@ Route::apiResource('certificates', CertificateController::class);
 Route::apiResource('communities', CommunityController::class);
 Route::apiResource('community-memberships', CommunityMembershipController::class);
 Route::apiResource('events', EventController::class);
+// Get events for a specific community
+Route::get('/communities/{community}/events', [EventController::class, 'showByCommunity']);
+
 Route::apiResource('users', UserController::class);
 Route::apiResource('departments', DepartmentController::class);
 Route::apiResource('universities', UniversityController::class);
