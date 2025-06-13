@@ -17,6 +17,9 @@ Route::middleware(['auth:sanctum'])->get('/api/me', function (Request $request) 
     ]);
 });
 
+Route::get('api/user/communities', [UserController::class, 'getUserCommunities']);
+
+
 Route::post('/api/test', [UserController::class, 'store']);
 
 

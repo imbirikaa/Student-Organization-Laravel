@@ -96,4 +96,21 @@ class UserController extends Controller
             'community_count' => $count,
         ]);
     }
+
+    public function getUserCommunities(Request $request)
+    {
+        // Get the authenticated user
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        // Fetch the communities the user is related to
+        // (Assuming you have a 'communities' relationship on your User model)
+        $communities = $user->communities()->get(['communities.id', 'communities.community']);
+
+
+        return response()->json($communities);
+    }
 }

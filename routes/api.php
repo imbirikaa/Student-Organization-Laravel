@@ -43,7 +43,7 @@ use Illuminate\Support\Facades\Hash;
 |
 */
 
-
+// Route::get('/user/communities', [UserController::class, 'getUserCommunities']);
 
 Route::apiResource('badges', BadgeController::class);
 Route::apiResource('certificates', CertificateController::class);
