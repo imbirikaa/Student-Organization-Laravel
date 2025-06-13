@@ -47,10 +47,13 @@ use Illuminate\Support\Facades\Hash;
 // Route::get('/user/communities', [UserController::class, 'getUserCommunities']);
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
-}); 
+});
 
-Route::apiResource('badges', BadgeController::class); 
+Route::middleware('auth:sanctum')->get('/communities', [CommunityController::class, 'store']);
+
+Route::apiResource('badges', BadgeController::class);
 Route::apiResource('certificates', CertificateController::class);
+
 Route::apiResource('communities', CommunityController::class);
 Route::apiResource('community-memberships', CommunityMembershipController::class);
 Route::apiResource('events', EventController::class);

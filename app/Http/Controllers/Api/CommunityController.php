@@ -42,7 +42,7 @@ class CommunityController extends Controller
             ]);
 
             // --- EDITED: Set the creator to the currently logged-in user ---
-            $validatedData['creator_id'] = Auth::id();
+            $validatedData['creator_id'] = auth()->user()->id;
 
             if ($request->hasFile('logo')) {
                 $path = $request->file('logo')->store('community_logos', 'public');

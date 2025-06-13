@@ -20,7 +20,10 @@ return [
     //     'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
     //     Sanctum::currentApplicationUrlWithPort()
     // ))),
-    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', 'localhost:3000')),
+    'stateful' =>  [
+        'localhost:3000', // Your Next.js dev server
+        '127.0.0.1:3000', // Add this one too, just in case
+    ],
 
 
     /*
