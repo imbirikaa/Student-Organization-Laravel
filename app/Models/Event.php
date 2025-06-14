@@ -39,4 +39,14 @@ class Event extends Model
     {
         return $this->belongsToMany(User::class, 'event_user')->withTimestamps();
     }
+
+    public function registrations()
+    {
+        return $this->hasMany(EventRegistration::class);
+    }
+
+    public function registeredUsers()
+    {
+        return $this->belongsToMany(User::class, 'event_registrations')->withPivot('registration_date', 'status')->withTimestamps();
+    }
 }
