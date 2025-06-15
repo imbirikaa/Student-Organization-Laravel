@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\RegisterUserRequest;
 use App\Models\Friendship;
 use Illuminate\Support\Facades\Hash;
+use App\Models\CommunityMembership;
+use App\Models\CommunityRolePermission;
 
 class UserController extends Controller
 {
@@ -33,7 +35,7 @@ class UserController extends Controller
     {
         $user = User::where('nickname', $nickname)->firstOrFail();
 
-        $loggedInUserId = auth()->id(); // or request()->user()->id;
+        $loggedInUserId = request()->user()->id;
 
 
 
@@ -112,5 +114,53 @@ class UserController extends Controller
 
 
         return response()->json($communities);
+    }
+
+    /**
+     * Get user's permissions across all communities
+     */
+    public function getUserPermissions(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Authentication required'], 401);
+        }
+
+        $memberships = CommunityMembership::with(['community', 'role'])
+            ->where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->get();
+
+        $permissions = [];
+
+        foreach ($memberships as $membership) {
+            if ($membership->role) {
+                $rolePermissions = CommunityRolePermission::where('community_role_id', $membership->role->id)
+                    ->with('permission')
+                    ->get()
+                    ->pluck('permission.name')
+                    ->toArray();
+
+                $permissions[] = [
+                    'communityId' => $membership->community_id,
+                    'community' => [
+                        'id' => $membership->community->id,
+                        'name' => $membership->community->community,
+                    ],
+                    'role' => [
+                        'id' => $membership->role->id,
+                        'role' => $membership->role->role,
+                        'description' => $membership->role->description,
+                    ],
+                    'permissions' => $rolePermissions
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'permissions' => $permissions
+        ]);
     }
 }

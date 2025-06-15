@@ -10,7 +10,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Permission extends Model
 {
     use HasFactory;
+
     protected $table = 'permissions';
+
+    protected $fillable = [
+        'name',
+        'description',
+        'guard_name'
+    ];
 
     public function communityRolePermissions(): HasMany
     {

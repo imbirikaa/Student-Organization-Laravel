@@ -14,7 +14,14 @@ class CommunityMembership extends Model
         'community_role_id',
         'status',
         'application_date',
-        'approval_date'
+        'approval_date',
+        'custom_permissions'
+    ];
+
+    protected $casts = [
+        'custom_permissions' => 'array',
+        'application_date' => 'datetime',
+        'approval_date' => 'datetime',
     ];
 
     public function community()

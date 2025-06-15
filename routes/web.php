@@ -55,7 +55,7 @@ Route::post('/login', function (Request $request) {
 
 
 Route::middleware('auth:sanctum')->get('/api/user', function () {
-    $user = auth()->user();
+    $user = Auth::user();
     return app(UserController::class)->show($user->nickname);
 });
 
@@ -66,7 +66,7 @@ Route::get('/dashboard', function () {
 })->middleware('auth');
 
 Route::get('/check', function () {
-    return auth()->check() ? auth()->user() : 'Not authenticated';
+    return Auth::check() ? Auth::user() : 'Not authenticated';
 });
 
 Route::post('/logout', function (Request $request) {

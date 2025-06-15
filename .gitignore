@@ -17,3 +17,48 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Test and Debug Files
+test_*.php
+check_*.php
+verify_*.php
+setup_*.php
+debug_*.php
+make_*.php
+*_test.php
+*_debug.php
+testing/
+temp/
+/tests/temp/
+
+# Audit and Log Files
+audit_*.php
+log_*.php
+dump_*.php
+
+# Database dumps and backups
+*.sql
+*.dump
+backup_*.php
+restore_*.php
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Laravel specific test files
+/storage/testing/
+/storage/logs/testing.log
+/storage/framework/testing/

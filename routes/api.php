@@ -13,10 +13,11 @@ use App\Http\Controllers\Api\UniversityController;
 use App\Http\Controllers\Api\ForumCategoryController;
 use App\Http\Controllers\Api\ForumTopicController;
 use App\Http\Controllers\Api\ForumPostController;
+use App\Http\Controllers\Api\AuditController;
 use App\Http\Controllers\Api\QuizController;
 use App\Http\Controllers\Api\QuizQuestionController;
 use App\Http\Controllers\Api\QuizAnswerController;
-use App\Http\Controllers\Api\QuizSubmissionController;
+use App\HttpControllers\Api\QuizSubmissionController;
 use App\Http\Controllers\Api\ChatRoomController;
 use App\Http\Controllers\Api\ChatRoomUserController;
 use App\Http\Controllers\Api\CommunityRoleController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\Api\UserRoleController;
 use App\Http\Controllers\Api\UserBadgeController;
 use App\Http\Controllers\Api\UserCertificateController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\QuizSubmissionController as ApiQuizSubmissionController;
 use App\Http\Controllers\Api\TestController;
 
 use App\Models\User;
@@ -49,12 +51,13 @@ use Illuminate\Support\Facades\Hash;
 
 // Route::get('/user/communities', [UserController::class, 'getUserCommunities']);
 Route::middleware('auth:sanctum')->get('/user/communities', [UserController::class, 'getUserCommunities']);
+Route::middleware('auth:sanctum')->get('/user/permissions', [UserController::class, 'getUserPermissions']);
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
 // Enhanced /me endpoint with roles
-Route::middleware('auth:sanctum')->get('/me', function (Request $request) {
+Route::middleware('auth:web')->get('/me', function (Request $request) {
     $user = $request->user();
     if (!$user) {
         return response()->json(['message' => 'Unauthenticated'], 401);
@@ -92,6 +95,40 @@ Route::apiResource('certificates', CertificateController::class);
 
 Route::apiResource('communities', CommunityController::class);
 Route::apiResource('community-memberships', CommunityMembershipController::class);
+
+// Community-specific routes with permission protection
+Route::middleware(['auth:sanctum'])->group(function () {
+    // Event management within communities
+    Route::middleware(['community.permission:create_events,community'])->post('/communities/{community}/events', [EventController::class, 'store']);
+    Route::middleware(['community.permission:edit_events,community'])->put('/communities/{community}/events/{event}', [EventController::class, 'update']);
+    Route::middleware(['community.permission:delete_events,community'])->delete('/communities/{community}/events/{event}', [EventController::class, 'destroy']);
+
+    // Member management
+    Route::middleware(['community.permission:view_members,community'])->get('/communities/{community}/members', [CommunityMembershipController::class, 'getCommunityMembers']);
+    Route::middleware(['community.permission:remove_members,community'])->delete('/communities/{community}/members/{membership}', [CommunityMembershipController::class, 'removeMember']);
+    Route::middleware(['community.permission:assign_roles,community'])->patch('/communities/{community}/members/{membership}/role', [CommunityMembershipController::class, 'assignRole']);
+
+    // Direct permission management
+    Route::middleware(['community.permission:assign_roles,community'])->post('/communities/{community}/members/{membership}/permissions', [CommunityMembershipController::class, 'assignPermissions']);
+    Route::middleware(['community.permission:assign_roles,community'])->delete('/communities/{community}/members/{membership}/permissions', [CommunityMembershipController::class, 'removePermissions']);
+    Route::middleware(['community.permission:view_members,community'])->get('/communities/{community}/members/{membership}/direct-permissions', [CommunityMembershipController::class, 'getUserDirectPermissions']);
+
+    // Community applications
+    Route::middleware(['community.permission:view_members,community'])->get('/communities/{community}/applications', [CommunityMembershipController::class, 'getCommunityApplications']);
+    Route::middleware(['community.permission:approve_members,community'])->post('/communities/{community}/applications/{membership}/approve', [CommunityMembershipController::class, 'approveApplication']);
+    Route::middleware(['community.permission:reject_members,community'])->post('/communities/{community}/applications/{membership}/reject', [CommunityMembershipController::class, 'rejectApplication']);
+
+    // Forum management
+    Route::middleware(['community.permission:moderate_content,community'])->post('/communities/{community}/forum', [ForumTopicController::class, 'store']);
+    Route::middleware(['community.permission:moderate_content,community'])->put('/communities/{community}/forum/{topic}', [ForumTopicController::class, 'update']);
+    Route::middleware(['community.permission:moderate_content,community'])->delete('/communities/{community}/forum/{topic}', [ForumTopicController::class, 'destroy']);
+
+    // Audit logs
+    Route::middleware(['community.permission:view_audit_logs,community'])->get('/communities/{community}/audit-logs', [AuditController::class, 'getCommunityAuditLogs']);
+    Route::middleware(['community.permission:view_audit_logs,community'])->get('/communities/{community}/audit-actions', [AuditController::class, 'getAuditActions']);
+    Route::middleware(['community.permission:view_audit_logs,community'])->get('/communities/{community}/audit-stats', [AuditController::class, 'getAuditStats']);
+});
+
 Route::apiResource('events', EventController::class);
 // Get events for a specific community
 Route::get('/communities/{community}/events', [EventController::class, 'showByCommunity']);
@@ -114,7 +151,7 @@ Route::apiResource('forum-posts', ForumPostController::class);
 Route::apiResource('quizzes', QuizController::class);
 Route::apiResource('quiz-questions', QuizQuestionController::class);
 Route::apiResource('quiz-answers', QuizAnswerController::class);
-Route::apiResource('quiz-submissions', QuizSubmissionController::class);
+Route::apiResource('quiz-submissions', ApiQuizSubmissionController::class);
 Route::apiResource('chat-rooms', ChatRoomController::class);
 Route::apiResource('chat-room-users', ChatRoomUserController::class);
 Route::apiResource('messages', MessageController::class);
@@ -140,8 +177,37 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::get('/communities/{community}/applications', [CommunityMembershipController::class, 'getCommunityApplications']);
     Route::post('/applications/{membership}/approve', [CommunityMembershipController::class, 'approveApplication']);
     Route::post('/applications/{membership}/reject', [CommunityMembershipController::class, 'rejectApplication']);
+
+    // Event registration management
+    Route::get('/events', [EventController::class, 'getAllEvents']);
+    Route::get('/event-registrations', [EventController::class, 'getAllRegistrations']);
+    Route::get('/event-registration-stats', [EventController::class, 'getRegistrationStats']);
+    Route::get('/events/{event}/registrations', [EventController::class, 'getRegistrations']);
+    Route::get('/events/{event}/export-registrations', [EventController::class, 'exportRegistrations']);
+    Route::patch('/registrations/{registration}/status', [EventController::class, 'updateRegistrationStatus']);
+    Route::post('/registrations/{registration}/cancel', [EventController::class, 'cancelRegistration']);
+    Route::post('/registrations/{registration}/attend', [EventController::class, 'markAttended']);
+
+    // Attendance tracking - event-specific operations
+    Route::post('/events/{event}/check-in-by-code', [EventController::class, 'checkInByCode']);
+    Route::post('/events/{event}/bulk-check-in', [EventController::class, 'bulkCheckIn']);
+    Route::get('/events/{event}/check-in-stats', [EventController::class, 'getCheckInStats']);
+    Route::get('/registrations/{registration}/attendance-code', [EventController::class, 'getAttendanceCode']);
+});
+
+// User attendance code routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/my-attendance-codes', [EventController::class, 'getMyAttendanceCodes']);
+    Route::get('/attendance-code/{code}', [EventController::class, 'getAttendanceCodeDetails']);
 });
 
 // Test routes (for debugging)
 Route::get('/test/admin-stats', [TestController::class, 'testAdminStats']);
 Route::get('/test/auth', [TestController::class, 'testAuth']);
+
+// Add this route in the admin section
+Route::middleware(['auth:web'])->group(function () {
+    // Website admin routes
+    Route::get('/admin/communities', [CommunityController::class, 'getAllCommunitiesForAdmin']);
+    Route::post('/admin/registrations/{registration}/cancel', [EventController::class, 'adminCancelRegistration']);
+});
