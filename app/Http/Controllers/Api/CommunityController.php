@@ -94,7 +94,7 @@ class CommunityController extends Controller
     public function update(Request $request, Community $community)
     {
         $user = $request->user();
-
+        
         // Check permission to edit community
         $permissionError = $this->requireCommunityPermission($user, $community->id, 'edit_community');
         if ($permissionError) {
@@ -103,7 +103,7 @@ class CommunityController extends Controller
         }
 
         $oldValues = $community->toArray();
-
+        
         $validatedData = $request->validate([
             'community' => 'sometimes|string|max:255|unique:communities,community,' . $community->id,
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
@@ -124,13 +124,13 @@ class CommunityController extends Controller
                 $oldPath = str_replace('/storage/', '', $community->logo);
                 Storage::disk('public')->delete($oldPath);
             }
-
+            
             $path = $request->file('logo')->store('community_logos', 'public');
             $validatedData['logo'] = Storage::url($path);
         }
 
         $community->update($validatedData);
-
+        
         // Log the action
         $this->logCommunityAction(
             'community_updated',
@@ -154,7 +154,7 @@ class CommunityController extends Controller
     public function destroy(Community $community)
     {
         $user = request()->user();
-
+        
         // Check permission to delete community (only founders can delete)
         $permissionError = $this->requireCommunityPermission($user, $community->id, 'delete_community');
         if ($permissionError) {
@@ -163,13 +163,13 @@ class CommunityController extends Controller
         }
 
         $communityData = $community->toArray();
-
+        
         // Delete community logo from storage if exists
         if ($community->logo) {
             $logoPath = str_replace('/storage/', '', $community->logo);
             Storage::disk('public')->delete($logoPath);
         }
-
+        
         // Log the action before deletion
         $this->logCommunityAction(
             'community_deleted',
@@ -179,9 +179,9 @@ class CommunityController extends Controller
             "Community '{$community->community}' deleted",
             request()
         );
-
+        
         $community->delete();
-
+        
         return response()->json(['message' => 'Community deleted successfully']);
     }
 

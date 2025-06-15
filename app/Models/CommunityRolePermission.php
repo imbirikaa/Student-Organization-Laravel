@@ -11,11 +11,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class CommunityRolePermission extends Model
 {
     use HasFactory;
-
+    
     protected $table = 'community_role_permissions';
     public $incrementing = false;
     public $timestamps = false;
-
+    
     protected $fillable = [
         'community_role_id',
         'permission_id'

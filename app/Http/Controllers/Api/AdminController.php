@@ -8,7 +8,6 @@ use App\Models\Community;
 use App\Models\Event;
 use App\Models\CommunityMembership;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class AdminController extends Controller
 {
@@ -21,7 +20,7 @@ class AdminController extends Controller
    */
   private function checkAdminRole()
   {
-    $user = \Illuminate\Support\Facades\Auth::user();
+    $user = auth()->user();
     if (!$user) {
       return response()->json(['message' => 'Unauthenticated'], 401);
     }

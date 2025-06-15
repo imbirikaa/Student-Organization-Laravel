@@ -5,18 +5,14 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventRegistration;
-use App\Models\Community;
+use Illuminate\Http\Request;
 use App\Notifications\EventRegistrationCancelled;
 use App\Notifications\EventRegistrationConfirmed;
 use App\Traits\HasCommunityPermissions;
-use App\Traits\LogsAuditTrail;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class EventController extends Controller
 {
-    use HasCommunityPermissions, LogsAuditTrail;
-
+    use HasCommunityPermissions;
     public function index()
     {
         return Event::paginate(5);
@@ -289,25 +285,23 @@ class EventController extends Controller
     /**
      * Cancel registration (admin only)
      */
-    public function cancelRegistration(Request $request, $eventId)
+    public function cancelRegistration(Request $request, EventRegistration $registration)
     {
         $user = $request->user();
 
-        $registration = EventRegistration::where('event_id', $eventId)
-            ->where('user_id', $user->id)
-            ->with(['event', 'user'])
-            ->first();
-
-        if (!$registration) {
-            return response()->json(['error' => 'Registration not found'], 404);
+        if (!$this->isAdmin($user)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // Send notification with the registration object, not the event
-        $registration->user->notify(new EventRegistrationCancelled($registration));
+        $registration->update(['status' => 'cancelled']);
 
-        $registration->delete();
+        // Send notification to user
+        $registration->user->notify(new EventRegistrationCancelled($registration->event, 'Registration cancelled by administrator'));
 
-        return response()->json(['message' => 'Registration cancelled successfully']);
+        return response()->json([
+            'message' => 'Registration cancelled successfully',
+            'registration' => $registration->load(['user', 'event'])
+        ]);
     }
 
     /**
@@ -721,54 +715,5 @@ class EventController extends Controller
             'success' => true,
             'data' => $events
         ]);
-    }
-
-    /**
-     * Cancel a registration by admin (can cancel any registration)
-     */
-    public function adminCancelRegistration(Request $request, $registrationId)
-    {
-        $user = request()->user();
-
-        // Find the registration
-        $registration = EventRegistration::with(['event.community', 'user'])
-            ->find($registrationId);
-
-        if (!$registration) {
-            return response()->json(['error' => 'Registration not found'], 404);
-        }
-
-        $community = $registration->event->community;
-
-        // Check if user is website admin or has permission in the community
-        if (!$user->isWebsiteAdmin()) {
-            $permissionError = $this->requireCommunityPermission($user, $community->id, 'manage_event_registrations');
-            if ($permissionError) {
-                return $permissionError;
-            }
-        }
-
-        // Send notification before deleting the registration
-        $registration->user->notify(new \App\Notifications\EventRegistrationCancelled($registration));
-
-        // Log the action for audit - using direct AuditLog creation instead of trait method
-        \App\Models\AuditLog::create([
-            'user_id' => $user->id,
-            'community_id' => $community->id,
-            'action' => 'cancelled_registration',
-            'resource_type' => 'event_registration',
-            'resource_id' => $registration->id,
-            'details' => json_encode([
-                'event_title' => $registration->event->title,
-                'user_email' => $registration->user->email,
-                'cancelled_by_admin' => true
-            ]),
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
-
-        $registration->delete();
-
-        return response()->json(['message' => 'Registration cancelled successfully']);
     }
 }

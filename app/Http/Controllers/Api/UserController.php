@@ -122,7 +122,7 @@ class UserController extends Controller
     public function getUserPermissions(Request $request)
     {
         $user = $request->user();
-
+        
         if (!$user) {
             return response()->json(['message' => 'Authentication required'], 401);
         }

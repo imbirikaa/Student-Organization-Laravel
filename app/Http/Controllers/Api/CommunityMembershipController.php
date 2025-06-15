@@ -239,14 +239,8 @@ class CommunityMembershipController extends Controller
         // Check if user has permission to approve members in this community
         $permissionError = $this->requireCommunityPermission($user, $membership->community_id, 'approve_members');
         if ($permissionError) {
-            $this->logPermissionAction(
-                'member_approval',
-                $membership->community_id,
-                'approve_members',
-                false,
-                ['target_user_id' => $membership->user_id],
-                $request
-            );
+            $this->logPermissionAction('member_approval', $membership->community_id, 'approve_members', false, 
+                ['target_user_id' => $membership->user_id], $request);
             return $permissionError;
         }
 
@@ -291,14 +285,8 @@ class CommunityMembershipController extends Controller
         // Check if user has permission to reject members in this community
         $permissionError = $this->requireCommunityPermission($user, $membership->community_id, 'reject_members');
         if ($permissionError) {
-            $this->logPermissionAction(
-                'member_rejection',
-                $membership->community_id,
-                'reject_members',
-                false,
-                ['target_user_id' => $membership->user_id],
-                $request
-            );
+            $this->logPermissionAction('member_rejection', $membership->community_id, 'reject_members', false, 
+                ['target_user_id' => $membership->user_id], $request);
             return $permissionError;
         }
 
@@ -350,12 +338,12 @@ class CommunityMembershipController extends Controller
             ->get()
             ->map(function ($membership) {
                 // Get role permissions
-                $rolePermissions = $membership->role ?
+                $rolePermissions = $membership->role ? 
                     $membership->role->permissions()->pluck('name')->toArray() : [];
-
+                
                 // Get custom permissions
                 $customPermissions = $membership->custom_permissions ?? [];
-
+                
                 // Combine all permissions
                 $allPermissions = array_unique(array_merge($rolePermissions, $customPermissions));
 
@@ -453,7 +441,7 @@ class CommunityMembershipController extends Controller
         // Additional business logic: Only founders can assign founder role
         $newRole = \App\Models\CommunityRole::find($request->role_id);
         $oldRole = $membership->role;
-
+        
         if ($newRole->role === 'Kurucu') {
             $userRole = $this->getUserRoleInCommunity($user, $community->id);
             if (!$userRole || $userRole->role !== 'Kurucu') {
@@ -506,16 +494,16 @@ class CommunityMembershipController extends Controller
         try {
             $targetUser = $membership->user;
             $permissions = $request->permissions;
-
+            
             // For now, we'll store custom permissions in the community_memberships table
             // as a JSON field
-
+            
             // Get current permissions from membership
             $currentPermissions = $membership->custom_permissions ?? [];
-
+            
             // Merge with new permissions (avoiding duplicates)
             $allPermissions = array_unique(array_merge($currentPermissions, $permissions));
-
+            
             // Update membership with new permissions
             $membership->update([
                 'custom_permissions' => $allPermissions
@@ -541,6 +529,7 @@ class CommunityMembershipController extends Controller
                     'permissions' => $allPermissions
                 ]
             ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to assign permissions',
@@ -571,13 +560,13 @@ class CommunityMembershipController extends Controller
         try {
             $targetUser = $membership->user;
             $permissions = $request->permissions;
-
+            
             // Get current permissions from membership
             $currentPermissions = $membership->custom_permissions ?? [];
-
+            
             // Remove specified permissions
             $remainingPermissions = array_diff($currentPermissions, $permissions);
-
+            
             // Update membership
             $membership->update([
                 'custom_permissions' => array_values($remainingPermissions)
@@ -604,6 +593,7 @@ class CommunityMembershipController extends Controller
                     'remaining_permissions' => array_values($remainingPermissions)
                 ]
             ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to remove permissions',
@@ -628,7 +618,7 @@ class CommunityMembershipController extends Controller
 
         try {
             $targetUser = $membership->user;
-
+            
             // Get direct permissions from membership
             $directPermissions = $membership->custom_permissions ?? [];
 
@@ -639,6 +629,7 @@ class CommunityMembershipController extends Controller
                     'direct_permissions' => $directPermissions
                 ]
             ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to get user permissions',

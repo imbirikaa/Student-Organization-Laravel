@@ -19,21 +19,21 @@ class CheckCommunityPermission
     public function handle(Request $request, Closure $next, string $permission, string $communityParam = 'community'): Response
     {
         $user = $request->user();
-
+        
         if (!$user) {
             return response()->json(['message' => 'Authentication required'], 401);
         }
 
         // Get community ID from route parameters
         $communityId = $request->route($communityParam);
-
+        
         if (!$communityId) {
             return response()->json(['message' => 'Community not specified'], 400);
         }
 
         // Check permission
         $errorResponse = $this->requireCommunityPermission($user, $communityId, $permission);
-
+        
         if ($errorResponse) {
             return $errorResponse;
         }

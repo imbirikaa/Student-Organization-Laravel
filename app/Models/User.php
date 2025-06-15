@@ -29,18 +29,10 @@ class User extends Authenticatable
         'membership_date',
         'email_verified',
         'phone_verified',
-        'is_active',
-        'is_admin'
+        'is_active'
     ];
 
     protected $hidden = ['password'];
-
-    protected $casts = [
-        'is_admin' => 'boolean',
-        'is_active' => 'boolean',
-        'email_verified' => 'boolean',
-        'phone_verified' => 'boolean',
-    ];
 
     protected $appends = [
         'profile_picture_url',
@@ -132,32 +124,5 @@ class User extends Authenticatable
     public function getEventCountAttribute()
     {
         return $this->events()->count();
-    }
-
-    /**
-     * Check if user is a website administrator
-     */
-    public function isWebsiteAdmin(): bool
-    {
-        return $this->is_admin == true || $this->is_admin == 1;
-    }
-
-    /**
-     * Check if user is either a website admin or has specific community permission
-     */
-    public function hasGlobalPermission($permission, $communityId = null): bool
-    {
-        // Website admins have access to everything
-        if ($this->isWebsiteAdmin()) {
-            return true;
-        }
-
-        // If no community ID provided, only website admins have global permissions
-        if (!$communityId) {
-            return false;
-        }
-
-        // Check community-specific permissions (this would need to be implemented elsewhere)
-        return false;
     }
 }
