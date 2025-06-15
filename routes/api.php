@@ -57,7 +57,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // Enhanced /me endpoint with roles
-Route::middleware('auth:sanctum')->get('/me', function (Request $request) {
+Route::middleware('auth:web')->get('/me', function (Request $request) {
     $user = $request->user();
     if (!$user) {
         return response()->json(['message' => 'Unauthenticated'], 401);
@@ -102,27 +102,27 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::middleware(['community.permission:create_events,community'])->post('/communities/{community}/events', [EventController::class, 'store']);
     Route::middleware(['community.permission:edit_events,community'])->put('/communities/{community}/events/{event}', [EventController::class, 'update']);
     Route::middleware(['community.permission:delete_events,community'])->delete('/communities/{community}/events/{event}', [EventController::class, 'destroy']);
-    
+
     // Member management
     Route::middleware(['community.permission:view_members,community'])->get('/communities/{community}/members', [CommunityMembershipController::class, 'getCommunityMembers']);
     Route::middleware(['community.permission:remove_members,community'])->delete('/communities/{community}/members/{membership}', [CommunityMembershipController::class, 'removeMember']);
     Route::middleware(['community.permission:assign_roles,community'])->patch('/communities/{community}/members/{membership}/role', [CommunityMembershipController::class, 'assignRole']);
-    
+
     // Direct permission management
     Route::middleware(['community.permission:assign_roles,community'])->post('/communities/{community}/members/{membership}/permissions', [CommunityMembershipController::class, 'assignPermissions']);
     Route::middleware(['community.permission:assign_roles,community'])->delete('/communities/{community}/members/{membership}/permissions', [CommunityMembershipController::class, 'removePermissions']);
     Route::middleware(['community.permission:view_members,community'])->get('/communities/{community}/members/{membership}/direct-permissions', [CommunityMembershipController::class, 'getUserDirectPermissions']);
-    
+
     // Community applications
     Route::middleware(['community.permission:view_members,community'])->get('/communities/{community}/applications', [CommunityMembershipController::class, 'getCommunityApplications']);
     Route::middleware(['community.permission:approve_members,community'])->post('/communities/{community}/applications/{membership}/approve', [CommunityMembershipController::class, 'approveApplication']);
     Route::middleware(['community.permission:reject_members,community'])->post('/communities/{community}/applications/{membership}/reject', [CommunityMembershipController::class, 'rejectApplication']);
-    
+
     // Forum management
     Route::middleware(['community.permission:moderate_content,community'])->post('/communities/{community}/forum', [ForumTopicController::class, 'store']);
     Route::middleware(['community.permission:moderate_content,community'])->put('/communities/{community}/forum/{topic}', [ForumTopicController::class, 'update']);
     Route::middleware(['community.permission:moderate_content,community'])->delete('/communities/{community}/forum/{topic}', [ForumTopicController::class, 'destroy']);
-    
+
     // Audit logs
     Route::middleware(['community.permission:view_audit_logs,community'])->get('/communities/{community}/audit-logs', [AuditController::class, 'getCommunityAuditLogs']);
     Route::middleware(['community.permission:view_audit_logs,community'])->get('/communities/{community}/audit-actions', [AuditController::class, 'getAuditActions']);
@@ -201,3 +201,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/attendance-code/{code}', [EventController::class, 'getAttendanceCodeDetails']);
 });
 
+// Test routes (for debugging)
+Route::get('/test/admin-stats', [TestController::class, 'testAdminStats']);
+Route::get('/test/auth', [TestController::class, 'testAuth']);
+
+// Add this route in the admin section
+Route::middleware(['auth:web'])->group(function () {
+    // Website admin routes
+    Route::get('/admin/communities', [CommunityController::class, 'getAllCommunitiesForAdmin']);
+    Route::post('/admin/registrations/{registration}/cancel', [EventController::class, 'adminCancelRegistration']);
+});
