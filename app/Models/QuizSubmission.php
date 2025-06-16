@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class QuizSubmission extends Model
 {
     use HasFactory;
-    protected $fillable = ['quiz_id', 'user_id', 'submission_datetime', 'correct_count', 'is_passed'];
+    protected $fillable = ['quiz_id', 'user_id', 'score', 'answers', 'passed', 'submitted_at', 'submission_datetime', 'correct_count', 'is_passed'];
 
     public function quiz()
     {

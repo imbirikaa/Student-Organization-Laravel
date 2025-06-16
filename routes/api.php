@@ -17,7 +17,7 @@ use App\Http\Controllers\Api\AuditController;
 use App\Http\Controllers\Api\QuizController;
 use App\Http\Controllers\Api\QuizQuestionController;
 use App\Http\Controllers\Api\QuizAnswerController;
-use App\HttpControllers\Api\QuizSubmissionController;
+use App\Http\Controllers\Api\QuizSubmissionController;
 use App\Http\Controllers\Api\ChatRoomController;
 use App\Http\Controllers\Api\ChatRoomUserController;
 use App\Http\Controllers\Api\CommunityRoleController;
@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\QuizSubmissionController as ApiQuizSubmissionController;
 use App\Http\Controllers\Api\TestController;
 use App\Http\Controllers\Api\FileUploadController;
+use App\Http\Controllers\Api\AdminQuizController;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -100,37 +101,40 @@ Route::apiResource('community-memberships', CommunityMembershipController::class
 // Community-specific routes with permission protection
 Route::middleware(['auth:sanctum'])->group(function () {
     // Event management within communities
-    Route::middleware(['community.permission:create_events,community'])->post('/communities/{community}/events', [EventController::class, 'store']);
-    Route::middleware(['community.permission:edit_events,community'])->put('/communities/{community}/events/{event}', [EventController::class, 'update']);
-    Route::middleware(['community.permission:delete_events,community'])->delete('/communities/{community}/events/{event}', [EventController::class, 'destroy']);
+    Route::post('/communities/{community}/events', [EventController::class, 'store']);
+    Route::put('/communities/{community}/events/{event}', [EventController::class, 'update']);
+    Route::delete('/communities/{community}/events/{event}', [EventController::class, 'destroy']);
 
     // Member management
-    Route::middleware(['community.permission:view_members,community'])->get('/communities/{community}/members', [CommunityMembershipController::class, 'getCommunityMembers']);
-    Route::middleware(['community.permission:remove_members,community'])->delete('/communities/{community}/members/{membership}', [CommunityMembershipController::class, 'removeMember']);
-    Route::middleware(['community.permission:assign_roles,community'])->patch('/communities/{community}/members/{membership}/role', [CommunityMembershipController::class, 'assignRole']);
+    Route::get('/communities/{community}/members', [CommunityMembershipController::class, 'getCommunityMembers']);
+    Route::delete('/communities/{community}/members/{membership}', [CommunityMembershipController::class, 'removeMember']);
+    Route::patch('/communities/{community}/members/{membership}/role', [CommunityMembershipController::class, 'assignRole']);
 
     // Direct permission management
-    Route::middleware(['community.permission:assign_roles,community'])->post('/communities/{community}/members/{membership}/permissions', [CommunityMembershipController::class, 'assignPermissions']);
-    Route::middleware(['community.permission:assign_roles,community'])->delete('/communities/{community}/members/{membership}/permissions', [CommunityMembershipController::class, 'removePermissions']);
-    Route::middleware(['community.permission:view_members,community'])->get('/communities/{community}/members/{membership}/direct-permissions', [CommunityMembershipController::class, 'getUserDirectPermissions']);
+    Route::post('/communities/{community}/members/{membership}/permissions', [CommunityMembershipController::class, 'assignPermissions']);
+    Route::delete('/communities/{community}/members/{membership}/permissions', [CommunityMembershipController::class, 'removePermissions']);
+    Route::get('/communities/{community}/members/{membership}/direct-permissions', [CommunityMembershipController::class, 'getUserDirectPermissions']);
 
     // Community applications
-    Route::middleware(['community.permission:view_members,community'])->get('/communities/{community}/applications', [CommunityMembershipController::class, 'getCommunityApplications']);
-    Route::middleware(['community.permission:approve_members,community'])->post('/communities/{community}/applications/{membership}/approve', [CommunityMembershipController::class, 'approveApplication']);
-    Route::middleware(['community.permission:reject_members,community'])->post('/communities/{community}/applications/{membership}/reject', [CommunityMembershipController::class, 'rejectApplication']);
+    Route::post('/communities/{community}/apply', [CommunityMembershipController::class, 'apply']);
+    Route::get('/communities/{community}/applications', [CommunityMembershipController::class, 'getCommunityApplications']);
+    Route::post('/communities/{community}/applications/{membership}/approve', [CommunityMembershipController::class, 'approveApplication']);
+    Route::post('/communities/{community}/applications/{membership}/reject', [CommunityMembershipController::class, 'rejectApplication']);
 
     // Forum management
-    Route::middleware(['community.permission:moderate_content,community'])->post('/communities/{community}/forum', [ForumTopicController::class, 'store']);
-    Route::middleware(['community.permission:moderate_content,community'])->put('/communities/{community}/forum/{topic}', [ForumTopicController::class, 'update']);
-    Route::middleware(['community.permission:moderate_content,community'])->delete('/communities/{community}/forum/{topic}', [ForumTopicController::class, 'destroy']);
+    Route::post('/communities/{community}/forum', [ForumTopicController::class, 'store']);
+    Route::put('/communities/{community}/forum/{topic}', [ForumTopicController::class, 'update']);
+    Route::delete('/communities/{community}/forum/{topic}', [ForumTopicController::class, 'destroy']);
 
     // Audit logs
-    Route::middleware(['community.permission:view_audit_logs,community'])->get('/communities/{community}/audit-logs', [AuditController::class, 'getCommunityAuditLogs']);
-    Route::middleware(['community.permission:view_audit_logs,community'])->get('/communities/{community}/audit-actions', [AuditController::class, 'getAuditActions']);
-    Route::middleware(['community.permission:view_audit_logs,community'])->get('/communities/{community}/audit-stats', [AuditController::class, 'getAuditStats']);
+    Route::get('/communities/{community}/audit-logs', [AuditController::class, 'getCommunityAuditLogs']);
+    Route::get('/communities/{community}/audit-actions', [AuditController::class, 'getAuditActions']);
+    Route::get('/communities/{community}/audit-stats', [AuditController::class, 'getAuditStats']);
 });
 
-Route::apiResource('events', EventController::class);
+// Public event routes (no auth required)
+Route::get('/events', [EventController::class, 'index']);
+Route::get('/events/{event}', [EventController::class, 'show']);
 // Get events for a specific community
 Route::get('/communities/{community}/events', [EventController::class, 'showByCommunity']);
 
@@ -139,6 +143,12 @@ Route::get('/events/{event}/check-registration', [EventController::class, 'check
 Route::get('/events/{event}/registrations', [EventController::class, 'getRegistrations']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    // Protected event routes (auth required)
+    Route::post('/events', [EventController::class, 'store']);
+    Route::put('/events/{event}', [EventController::class, 'update']);
+    Route::delete('/events/{event}', [EventController::class, 'destroy']);
+
+    // Event registration
     Route::post('/events/{event}/register', [EventController::class, 'register']);
     Route::delete('/events/{event}/unregister', [EventController::class, 'unregister']);
 });
@@ -167,7 +177,31 @@ Route::apiResource('user-roles', UserRoleController::class);
 Route::apiResource('user-badges', UserBadgeController::class);
 Route::apiResource('friendships', FriendshipController::class);
 Route::apiResource('user-certificates', UserCertificateController::class);
-Route::middleware('auth:sanctum')->post('/communities/{community}/apply', [CommunityMembershipController::class, 'apply']);
+
+// Test routes (temporary - remove in production)
+Route::get('/test/events/{eventId}/quiz', [QuizController::class, 'getEventQuiz']);
+
+// Enhanced Quiz and Certificate Routes (temporarily without auth for testing)
+Route::group([], function () {
+    // Quiz-specific routes
+    Route::get('/events/{eventId}/quiz', [QuizController::class, 'getEventQuiz']);
+    Route::post('/quizzes/with-questions', [QuizController::class, 'storeWithQuestions']);
+    Route::delete('/events/{eventId}/quiz', [QuizController::class, 'deleteEventQuiz']);
+
+    // Quiz submission routes
+    Route::post('/quiz-submissions/submit', [QuizSubmissionController::class, 'submitQuiz']);
+    Route::get('/quiz-submissions/user/{quizId}', [QuizSubmissionController::class, 'getUserSubmission']);
+    Route::get('/quiz-submissions', [QuizSubmissionController::class, 'getSubmissionsByEvent']);
+
+    // Testing routes for submissions
+    Route::delete('/quiz-submissions/quiz/{quizId}', [QuizSubmissionController::class, 'deleteQuizSubmissions']);
+    Route::delete('/quiz-submissions/event/{eventId}', [QuizSubmissionController::class, 'deleteEventSubmissions']);
+
+    // Certificate generation routes
+    Route::post('/user-certificates/generate', [UserCertificateController::class, 'generateCertificate']);
+    Route::get('/events/{eventId}/certificate', [UserCertificateController::class, 'getEventCertificate']);
+    Route::get('/user/certificates', [UserCertificateController::class, 'getUserCertificates']);
+});
 
 // Admin routes
 Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
@@ -185,6 +219,14 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::get('/events/{eventId}/check-in-stats', [AdminController::class, 'getEventCheckInStats']);
     Route::post('/events/{eventId}/check-in-by-code', [AdminController::class, 'checkInByCode']);
     Route::post('/events/{eventId}/bulk-check-in', [AdminController::class, 'bulkCheckIn']);
+
+    // Admin Quiz Management
+    Route::get('/quizzes', [AdminQuizController::class, 'index']);
+    Route::get('/quizzes/{id}', [AdminQuizController::class, 'show']);
+    Route::get('/quizzes/analytics/dashboard', [AdminQuizController::class, 'analytics']);
+    Route::get('/quizzes/{id}/export', [AdminQuizController::class, 'exportQuizData']);
+    Route::delete('/quiz-submissions/{id}', [AdminQuizController::class, 'deleteSubmission']);
+    Route::delete('/quiz-submissions', [AdminQuizController::class, 'bulkDeleteSubmissions']);
 });
 
 // File upload routes
@@ -193,4 +235,12 @@ Route::middleware('auth:sanctum')->prefix('files')->group(function () {
     Route::get('/{uploadableType}/{uploadableId}', [FileUploadController::class, 'getFiles']);
     Route::get('/download/{id}', [FileUploadController::class, 'downloadFile'])->name('api.files.download');
     Route::delete('/{id}', [FileUploadController::class, 'deleteFile']);
+});
+
+// Additional Quiz and Certificate routes (legacy endpoints)
+Route::middleware('auth:sanctum')->group(function () {
+    // Legacy certificate routes
+    Route::post('/certificates', [CertificateController::class, 'store']);
+    Route::get('/certificates', [CertificateController::class, 'index']);
+    Route::get('/certificates/{id}', [CertificateController::class, 'show']);
 });

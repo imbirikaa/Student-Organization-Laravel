@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Quiz extends Model
 {
     use HasFactory;
-    protected $fillable = ['event_id', 'required_correct_answers'];
+    protected $fillable = ['event_id', 'title', 'description', 'passing_score', 'time_limit', 'required_correct_answers'];
 
     public function event()
     {

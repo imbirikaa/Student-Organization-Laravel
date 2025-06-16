@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class QuizQuestion extends Model
 {
     use HasFactory;
-    protected $fillable = ['quiz_id', 'question'];
+    protected $fillable = ['quiz_id', 'question', 'explanation'];
 
     public function quiz()
     {
