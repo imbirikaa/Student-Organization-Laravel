@@ -8,10 +8,12 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use App\Traits\HasFileUploads;
+use App\Traits\HasCommunityPermissions;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles, HasFileUploads, HasCommunityPermissions;
 
     protected $fillable = [
         'first_name',
@@ -29,18 +31,10 @@ class User extends Authenticatable
         'membership_date',
         'email_verified',
         'phone_verified',
-        'is_active',
-        'is_admin'
+        'is_active'
     ];
 
     protected $hidden = ['password'];
-
-    protected $casts = [
-        'is_admin' => 'boolean',
-        'is_active' => 'boolean',
-        'email_verified' => 'boolean',
-        'phone_verified' => 'boolean',
-    ];
 
     protected $appends = [
         'profile_picture_url',
@@ -99,13 +93,35 @@ class User extends Authenticatable
      */
     public function getProfilePictureUrlAttribute()
     {
-        // Check if the picture exists on the public disk
-        if ($this->profile_picture && Storage::disk('public')->exists($this->profile_picture)) {
-            // *** THE FIX IS HERE ***
-            // Use the asset() helper to generate the correct public URL.
-            // This is friendlier to static analysis tools and is standard practice.
-            return asset('storage/' . $this->profile_picture);
+        // First check if there's a profile picture file upload
+        $profilePictureFile = $this->fileUploads()->where('upload_type', 'profile_picture')->latest()->first();
+        if ($profilePictureFile) {
+            return $profilePictureFile->url;
         }
+        
+        // Fallback to the profile_picture field if it exists
+        if ($this->profile_picture) {
+            // If it's already a full URL, return as is
+            if (filter_var($this->profile_picture, FILTER_VALIDATE_URL)) {
+                return $this->profile_picture;
+            }
+            
+            // If it already starts with /storage, use asset() directly
+            if (str_starts_with($this->profile_picture, '/storage/')) {
+                return asset(ltrim($this->profile_picture, '/'));
+            }
+            
+            // If it starts with storage/, add the leading slash
+            if (str_starts_with($this->profile_picture, 'storage/')) {
+                return asset($this->profile_picture);
+            }
+            
+            // Check if the picture exists on the public disk
+            if (Storage::disk('public')->exists($this->profile_picture)) {
+                return asset('storage/' . $this->profile_picture);
+            }
+        }
+        
         // Return a default placeholder image if no profile picture is set
         return 'https://via.placeholder.com/150/000000/FFFFFF/?text=User';
     }
@@ -132,32 +148,5 @@ class User extends Authenticatable
     public function getEventCountAttribute()
     {
         return $this->events()->count();
-    }
-
-    /**
-     * Check if user is a website administrator
-     */
-    public function isWebsiteAdmin(): bool
-    {
-        return $this->is_admin == true || $this->is_admin == 1;
-    }
-
-    /**
-     * Check if user is either a website admin or has specific community permission
-     */
-    public function hasGlobalPermission($permission, $communityId = null): bool
-    {
-        // Website admins have access to everything
-        if ($this->isWebsiteAdmin()) {
-            return true;
-        }
-
-        // If no community ID provided, only website admins have global permissions
-        if (!$communityId) {
-            return false;
-        }
-
-        // Check community-specific permissions (this would need to be implemented elsewhere)
-        return false;
     }
 }

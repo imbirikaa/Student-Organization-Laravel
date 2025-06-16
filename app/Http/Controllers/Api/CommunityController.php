@@ -27,7 +27,23 @@ class CommunityController extends Controller
      */
     public function index()
     {
-        return Community::withCount(['memberships', 'events'])->latest()->get();
+        $communities = Community::withCount(['memberships', 'events'])
+            ->latest()
+            ->get()
+            ->map(function ($community) {
+                return [
+                    'id' => $community->id,
+                    'community' => $community->community,
+                    'logo' => $community->logo_url, // Use the computed logo URL
+                    'about' => $community->about,
+                    'founding_year' => $community->founding_year,
+                    'memberships_count' => $community->memberships_count,
+                    'events_count' => $community->events_count,
+                    'created_at' => $community->created_at
+                ];
+            });
+
+        return response()->json(['communities' => $communities]);
     }
 
     /**
@@ -53,12 +69,36 @@ class CommunityController extends Controller
             // --- EDITED: Set the creator to the currently logged-in user ---
             $validatedData['creator_id'] = Auth::id();
 
-            if ($request->hasFile('logo')) {
-                $path = $request->file('logo')->store('community_logos', 'public');
-                $validatedData['logo'] = Storage::url($path);
-            }
-
             $community = Community::create($validatedData);
+
+            // Handle logo upload after community is created
+            if ($request->hasFile('logo')) {
+                $file = $request->file('logo');
+                $originalName = $file->getClientOriginalName();
+                $filename = time() . '_' . $originalName;
+                $path = 'communities/' . $community->id . '/logo/' . $filename;
+                
+                $storedPath = $file->storeAs(dirname($path), basename($path), 'public');
+
+                // Create file upload record
+                $fileUpload = $community->fileUploads()->create([
+                    'original_name' => $originalName,
+                    'filename' => $filename,
+                    'path' => $storedPath,
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                    'disk' => 'public',
+                    'uploadable_type' => get_class($community),
+                    'uploadable_id' => $community->id,
+                    'upload_type' => 'cover_image',
+                    'uploaded_by' => Auth::id(),
+                    'is_public' => true,
+                    'description' => 'Community Logo'
+                ]);
+
+                // Update community with logo URL
+                $community->update(['logo' => Storage::url($storedPath)]);
+            }
 
             // --- EDITED: Automatically make the creator an admin member ---
             CommunityMembership::create([
@@ -123,10 +163,35 @@ class CommunityController extends Controller
             if ($community->logo) {
                 $oldPath = str_replace('/storage/', '', $community->logo);
                 Storage::disk('public')->delete($oldPath);
+                
+                // Also delete the old file upload record
+                $community->fileUploads()->where('upload_type', 'cover_image')->delete();
             }
 
-            $path = $request->file('logo')->store('community_logos', 'public');
-            $validatedData['logo'] = Storage::url($path);
+            $file = $request->file('logo');
+            $originalName = $file->getClientOriginalName();
+            $filename = time() . '_' . $originalName;
+            $path = 'communities/' . $community->id . '/logo/' . $filename;
+            
+            $storedPath = $file->storeAs(dirname($path), basename($path), 'public');
+
+            // Create file upload record
+            $fileUpload = $community->fileUploads()->create([
+                'original_name' => $originalName,
+                'filename' => $filename,
+                'path' => $storedPath,
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+                'disk' => 'public',
+                'uploadable_type' => get_class($community),
+                'uploadable_id' => $community->id,
+                'upload_type' => 'cover_image',
+                'uploaded_by' => $user->id,
+                'is_public' => true,
+                'description' => 'Community Logo'
+            ]);
+
+            $validatedData['logo'] = Storage::url($storedPath);
         }
 
         $community->update($validatedData);

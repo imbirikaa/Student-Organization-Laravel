@@ -5,21 +5,51 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventRegistration;
-use App\Models\Community;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use App\Notifications\EventRegistrationCancelled;
 use App\Notifications\EventRegistrationConfirmed;
 use App\Traits\HasCommunityPermissions;
-use App\Traits\LogsAuditTrail;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class EventController extends Controller
 {
-    use HasCommunityPermissions, LogsAuditTrail;
-
+    use HasCommunityPermissions;
     public function index()
     {
-        return Event::paginate(5);
+        $events = Event::with(['community:id,community'])
+            ->latest()
+            ->paginate(5);
+
+        // Transform each item manually for the response
+        $data = $events->items();
+        $transformedData = array_map(function ($event) {
+            return [
+                'id' => $event->id,
+                'event' => $event->event,
+                'cover_image' => $event->cover_image_url,
+                'description' => $event->description,
+                'start_datetime' => $event->start_datetime,
+                'last_application_datetime' => $event->last_application_datetime,
+                'location' => $event->location,
+                'certificate_type' => $event->certificate_type,
+                'min_sessions_for_certificate' => $event->min_sessions_for_certificate,
+                'verification_type' => $event->verification_type,
+                'community' => $event->community,
+                'created_at' => $event->created_at,
+                'updated_at' => $event->updated_at
+            ];
+        }, $data);
+
+        return response()->json([
+            'data' => $transformedData,
+            'current_page' => $events->currentPage(),
+            'last_page' => $events->lastPage(),
+            'per_page' => $events->perPage(),
+            'total' => $events->total(),
+            'has_more_pages' => $events->hasMorePages(),
+            'next_page_url' => $events->nextPageUrl(),
+            'prev_page_url' => $events->previousPageUrl(),
+        ]);
     }
 
     public function store(Request $request)
@@ -34,6 +64,9 @@ class EventController extends Controller
             'event' => 'required|string|max:255',
             'start_datetime' => 'required|date',
             'location' => 'required|string|max:255',
+            'description' => 'nullable|string|max:2000',
+            'last_application_datetime' => 'nullable|date|before:start_datetime',
+            'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max
         ]);
 
         // Check if user has permission to create events in this community
@@ -43,7 +76,43 @@ class EventController extends Controller
             return $permissionError;
         }
 
-        return Event::create($request->all());
+        // Create the event first
+        $eventData = $request->except(['cover_image']);
+        $event = Event::create($eventData);
+
+        // Handle cover image upload
+        if ($request->hasFile('cover_image')) {
+            $file = $request->file('cover_image');
+            $originalName = $file->getClientOriginalName();
+            $filename = time() . '_' . $originalName;
+            $path = 'events/' . $event->id . '/cover_image/' . $filename;
+
+            $storedPath = $file->storeAs(dirname($path), basename($path), 'public');
+
+            // Create file upload record
+            $fileUpload = $event->fileUploads()->create([
+                'original_name' => $originalName,
+                'filename' => $filename,
+                'path' => $storedPath,
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+                'disk' => 'public',
+                'uploadable_type' => get_class($event),
+                'uploadable_id' => $event->id,
+                'upload_type' => 'cover_image',
+                'uploaded_by' => $user->id,
+                'is_public' => true,
+                'description' => 'Event Cover Image'
+            ]);
+
+            // Update event's cover_image field
+            $event->update(['cover_image' => $storedPath]);
+        }
+
+        return response()->json([
+            'event' => $event->fresh()->load('community'),
+            'message' => 'Event created successfully'
+        ], 201);
     }
 
     public function show(Event $event)
@@ -72,8 +141,59 @@ class EventController extends Controller
             return $permissionError;
         }
 
-        $event->update($request->all());
-        return $event;
+        $request->validate([
+            'community_id' => 'sometimes|exists:communities,id',
+            'event' => 'sometimes|string|max:255',
+            'start_datetime' => 'sometimes|date',
+            'location' => 'sometimes|string|max:255',
+            'description' => 'nullable|string|max:2000',
+            'last_application_datetime' => 'nullable|date|before:start_datetime',
+            'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max
+        ]);
+
+        // Handle cover image upload
+        if ($request->hasFile('cover_image')) {
+            // Delete old cover image if exists
+            if ($event->cover_image) {
+                Storage::disk('public')->delete($event->cover_image);
+
+                // Also delete the old file upload record
+                $event->fileUploads()->where('upload_type', 'cover_image')->delete();
+            }
+
+            $file = $request->file('cover_image');
+            $originalName = $file->getClientOriginalName();
+            $filename = time() . '_' . $originalName;
+            $path = 'events/' . $event->id . '/cover_image/' . $filename;
+
+            $storedPath = $file->storeAs(dirname($path), basename($path), 'public');
+
+            // Create file upload record
+            $fileUpload = $event->fileUploads()->create([
+                'original_name' => $originalName,
+                'filename' => $filename,
+                'path' => $storedPath,
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+                'disk' => 'public',
+                'uploadable_type' => get_class($event),
+                'uploadable_id' => $event->id,
+                'upload_type' => 'cover_image',
+                'uploaded_by' => $user->id,
+                'is_public' => true,
+                'description' => 'Event Cover Image'
+            ]);
+
+            // Update event's cover_image field
+            $request->merge(['cover_image' => $storedPath]);
+        }
+
+        $event->update($request->except(['cover_image_file']));
+
+        return response()->json([
+            'event' => $event->fresh()->load('community'),
+            'message' => 'Event updated successfully'
+        ]);
     }
 
     public function destroy(Event $event)
@@ -289,25 +409,23 @@ class EventController extends Controller
     /**
      * Cancel registration (admin only)
      */
-    public function cancelRegistration(Request $request, $eventId)
+    public function cancelRegistration(Request $request, EventRegistration $registration)
     {
         $user = $request->user();
 
-        $registration = EventRegistration::where('event_id', $eventId)
-            ->where('user_id', $user->id)
-            ->with(['event', 'user'])
-            ->first();
-
-        if (!$registration) {
-            return response()->json(['error' => 'Registration not found'], 404);
+        if (!$this->isAdmin($user)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // Send notification with the registration object, not the event
-        $registration->user->notify(new EventRegistrationCancelled($registration));
+        $registration->update(['status' => 'cancelled']);
 
-        $registration->delete();
+        // Send notification to user
+        $registration->user->notify(new EventRegistrationCancelled($registration->event, 'Registration cancelled by administrator'));
 
-        return response()->json(['message' => 'Registration cancelled successfully']);
+        return response()->json([
+            'message' => 'Registration cancelled successfully',
+            'registration' => $registration->load(['user', 'event'])
+        ]);
     }
 
     /**
@@ -586,52 +704,44 @@ class EventController extends Controller
     /**
      * Get user's attendance codes for their event registrations
      */
-    public function getMyAttendanceCodes()
+    public function getMyAttendanceCodes(Request $request)
     {
-        try {
-            $user = request()->user();
+        $user = $request->user();
 
-            $registrations = EventRegistration::with(['event', 'user'])
-                ->where('user_id', $user->id)
-                ->whereNotNull('attendance_code')
-                ->where('status', 'confirmed')
-                ->get()
-                ->map(function ($registration) {
-                    return [
-                        'id' => $registration->id,
-                        'attendance_code' => $registration->attendance_code,
-                        'checked_in_at' => $registration->checked_in_at,
-                        'checked_in_by' => $registration->checked_in_by,
-                        'check_in_notes' => $registration->check_in_notes,
-                        'event' => [
-                            'id' => $registration->event->id,
-                            'event' => $registration->event->title, // Use title accessor for display
-                            'description' => $registration->event->description,
-                            'start_date' => $registration->event->start_date,
-                            'end_date' => $registration->event->end_date,
-                            'location' => $registration->event->location,
-                            'max_participants' => $registration->event->max_participants,
-                        ],
-                        'user' => [
-                            'id' => $registration->user->id,
-                            'name' => $registration->user->name,
-                            'email' => $registration->user->email,
-                        ],
-                        'registration_date' => $registration->registration_date,
-                        'status' => $registration->status,
-                    ];
-                });
+        $registrations = EventRegistration::with(['event.community', 'user'])
+            ->where('user_id', $user->id)
+            ->where('status', 'confirmed')
+            ->orderBy('registration_date', 'desc')
+            ->get()
+            ->map(function ($registration) {
+                return [
+                    'id' => $registration->id,
+                    'attendance_code' => $registration->attendance_code,
+                    'checked_in_at' => $registration->checked_in_at,
+                    'checked_in_by' => $registration->checked_in_by,
+                    'check_in_notes' => $registration->check_in_notes,
+                    'status' => $registration->status,
+                    'registration_date' => $registration->registration_date,
+                    'event' => [
+                        'id' => $registration->event->id,
+                        'event' => $registration->event->event,
+                        'description' => $registration->event->description,
+                        'start_date' => $registration->event->start_datetime,
+                        'end_date' => $registration->event->start_datetime, // Assuming same as start for now
+                        'location' => $registration->event->location,
+                        'max_participants' => $registration->event->max_participants ?? null,
+                    ],
+                    'user' => [
+                        'id' => $registration->user->id,
+                        'name' => $registration->user->first_name . ' ' . $registration->user->last_name,
+                        'email' => $registration->user->email,
+                    ],
+                ];
+            });
 
-            return response()->json([
-                'success' => true,
-                'data' => $registrations
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch attendance codes: ' . $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'attendance_codes' => $registrations
+        ]);
     }
 
     /**
@@ -721,54 +831,5 @@ class EventController extends Controller
             'success' => true,
             'data' => $events
         ]);
-    }
-
-    /**
-     * Cancel a registration by admin (can cancel any registration)
-     */
-    public function adminCancelRegistration(Request $request, $registrationId)
-    {
-        $user = request()->user();
-
-        // Find the registration
-        $registration = EventRegistration::with(['event.community', 'user'])
-            ->find($registrationId);
-
-        if (!$registration) {
-            return response()->json(['error' => 'Registration not found'], 404);
-        }
-
-        $community = $registration->event->community;
-
-        // Check if user is website admin or has permission in the community
-        if (!$user->isWebsiteAdmin()) {
-            $permissionError = $this->requireCommunityPermission($user, $community->id, 'manage_event_registrations');
-            if ($permissionError) {
-                return $permissionError;
-            }
-        }
-
-        // Send notification before deleting the registration
-        $registration->user->notify(new \App\Notifications\EventRegistrationCancelled($registration));
-
-        // Log the action for audit - using direct AuditLog creation instead of trait method
-        \App\Models\AuditLog::create([
-            'user_id' => $user->id,
-            'community_id' => $community->id,
-            'action' => 'cancelled_registration',
-            'resource_type' => 'event_registration',
-            'resource_id' => $registration->id,
-            'details' => json_encode([
-                'event_title' => $registration->event->title,
-                'user_email' => $registration->user->email,
-                'cancelled_by_admin' => true
-            ]),
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
-
-        $registration->delete();
-
-        return response()->json(['message' => 'Registration cancelled successfully']);
     }
 }

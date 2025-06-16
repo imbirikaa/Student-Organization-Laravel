@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\RegisterUserRequest;
 use App\Models\Friendship;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use App\Models\CommunityMembership;
 use App\Models\CommunityRolePermission;
 
@@ -56,7 +57,7 @@ class UserController extends Controller
             'nickname' => $user->nickname,
             'email' => $user->email,
             'about' => $user->about,
-            'profile_picture' => $user->profile_picture,
+            'profile_picture' => $user->profile_picture_url, // Use the URL instead of the raw field
             'friend_count' => $user->friendships()->count(),
             'community_count' => $user->communities()->count(),
             'event_count' => $user->events()->count(),
@@ -72,14 +73,57 @@ class UserController extends Controller
         $validated = $request->validate([
             'first_name'     => 'required|string|max:255',
             'last_name'      => 'required|string|max:255',
-            'email'          => 'required|email|unique:users,email' . $user->id,
+            'email'          => 'required|email|unique:users,email,' . $user->id,
             'university_id'  => 'required|exists:universities,id',
             'department_id'  => 'required|exists:departments,id',
-            'profile_image'  => 'nullable|image|max:2048', // optional file
+            'profile_image'  => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'about'          => 'nullable|string|max:1000',
+            'phone'          => 'nullable|string|max:20',
         ]);
 
-        $user->update($request->all());
-        return $user;
+        // Handle profile image upload
+        if ($request->hasFile('profile_image')) {
+            // Delete old profile image if exists
+            if ($user->profile_picture) {
+                $oldPath = str_replace('/storage/', '', $user->profile_picture);
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            // Upload new profile image using FileUpload system
+            $file = $request->file('profile_image');
+            $originalName = $file->getClientOriginalName();
+            $filename = time() . '_' . $originalName;
+            $path = 'users/' . $user->id . '/profile_image/' . $filename;
+            
+            $storedPath = $file->storeAs(dirname($path), basename($path), 'public');
+
+            // Create file upload record
+            $fileUpload = $user->fileUploads()->create([
+                'original_name' => $originalName,
+                'filename' => $filename,
+                'path' => $storedPath,
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+                'disk' => 'public',
+                'uploadable_type' => get_class($user),
+                'uploadable_id' => $user->id,
+                'upload_type' => 'profile_image',
+                'uploaded_by' => $user->id,
+                'is_public' => true,
+                'description' => 'Profile Picture'
+            ]);
+
+            // Update user's profile_picture field
+            $validated['profile_picture'] = $storedPath;
+        }
+
+        $user->update($validated);
+        
+        // Return user with fresh profile picture URL
+        return response()->json([
+            'user' => $user->fresh(),
+            'message' => 'Profile updated successfully'
+        ]);
     }
 
     public function destroy($id)

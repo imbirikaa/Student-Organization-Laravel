@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\UserCertificateController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\QuizSubmissionController as ApiQuizSubmissionController;
 use App\Http\Controllers\Api\TestController;
+use App\Http\Controllers\Api\FileUploadController;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -57,7 +58,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // Enhanced /me endpoint with roles
-Route::middleware('auth:web')->get('/me', function (Request $request) {
+Route::middleware('auth:sanctum')->get('/me', function (Request $request) {
     $user = $request->user();
     if (!$user) {
         return response()->json(['message' => 'Unauthenticated'], 401);
@@ -86,7 +87,7 @@ Route::middleware('auth:web')->get('/me', function (Request $request) {
     ]);
 });
 
-Route::middleware('auth:sanctum')->get('/communities', [CommunityController::class, 'store']);
+Route::middleware('auth:sanctum')->get('/communities', [CommunityController::class, 'index']);
 Route::middleware('auth:sanctum')->post('/communities/{community}/roles', [CommunityRoleController::class, 'store']);
 
 
@@ -142,6 +143,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/events/{event}/unregister', [EventController::class, 'unregister']);
 });
 
+// User's own registrations and attendance codes
+Route::middleware('auth:sanctum')->get('/my-attendance-codes', [EventController::class, 'getMyAttendanceCodes']);
+
 Route::apiResource('users', UserController::class);
 Route::apiResource('departments', DepartmentController::class);
 Route::apiResource('universities', UniversityController::class);
@@ -172,42 +176,21 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::get('/recent-communities', [AdminController::class, 'getRecentCommunities']);
     Route::get('/pending-applications', [AdminController::class, 'getPendingApplications']);
 
-    // Community application management
-    Route::get('/community-applications', [CommunityMembershipController::class, 'getPendingApplications']);
-    Route::get('/communities/{community}/applications', [CommunityMembershipController::class, 'getCommunityApplications']);
-    Route::post('/applications/{membership}/approve', [CommunityMembershipController::class, 'approveApplication']);
-    Route::post('/applications/{membership}/reject', [CommunityMembershipController::class, 'rejectApplication']);
+    // Admin data management
+    Route::get('/events', [AdminController::class, 'getEvents']);
+    Route::get('/users', [AdminController::class, 'getUsers']);
+    Route::get('/communities', [AdminController::class, 'getCommunities']);
 
-    // Event registration management
-    Route::get('/events', [EventController::class, 'getAllEvents']);
-    Route::get('/event-registrations', [EventController::class, 'getAllRegistrations']);
-    Route::get('/event-registration-stats', [EventController::class, 'getRegistrationStats']);
-    Route::get('/events/{event}/registrations', [EventController::class, 'getRegistrations']);
-    Route::get('/events/{event}/export-registrations', [EventController::class, 'exportRegistrations']);
-    Route::patch('/registrations/{registration}/status', [EventController::class, 'updateRegistrationStatus']);
-    Route::post('/registrations/{registration}/cancel', [EventController::class, 'cancelRegistration']);
-    Route::post('/registrations/{registration}/attend', [EventController::class, 'markAttended']);
-
-    // Attendance tracking - event-specific operations
-    Route::post('/events/{event}/check-in-by-code', [EventController::class, 'checkInByCode']);
-    Route::post('/events/{event}/bulk-check-in', [EventController::class, 'bulkCheckIn']);
-    Route::get('/events/{event}/check-in-stats', [EventController::class, 'getCheckInStats']);
-    Route::get('/registrations/{registration}/attendance-code', [EventController::class, 'getAttendanceCode']);
+    // Attendance check-in routes
+    Route::get('/events/{eventId}/check-in-stats', [AdminController::class, 'getEventCheckInStats']);
+    Route::post('/events/{eventId}/check-in-by-code', [AdminController::class, 'checkInByCode']);
+    Route::post('/events/{eventId}/bulk-check-in', [AdminController::class, 'bulkCheckIn']);
 });
 
-// User attendance code routes
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/my-attendance-codes', [EventController::class, 'getMyAttendanceCodes']);
-    Route::get('/attendance-code/{code}', [EventController::class, 'getAttendanceCodeDetails']);
-});
-
-// Test routes (for debugging)
-Route::get('/test/admin-stats', [TestController::class, 'testAdminStats']);
-Route::get('/test/auth', [TestController::class, 'testAuth']);
-
-// Add this route in the admin section
-Route::middleware(['auth:web'])->group(function () {
-    // Website admin routes
-    Route::get('/admin/communities', [CommunityController::class, 'getAllCommunitiesForAdmin']);
-    Route::post('/admin/registrations/{registration}/cancel', [EventController::class, 'adminCancelRegistration']);
+// File upload routes
+Route::middleware('auth:sanctum')->prefix('files')->group(function () {
+    Route::post('/upload', [FileUploadController::class, 'upload']);
+    Route::get('/{uploadableType}/{uploadableId}', [FileUploadController::class, 'getFiles']);
+    Route::get('/download/{id}', [FileUploadController::class, 'downloadFile'])->name('api.files.download');
+    Route::delete('/{id}', [FileUploadController::class, 'deleteFile']);
 });
