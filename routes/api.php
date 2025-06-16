@@ -222,8 +222,8 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
 
     // Admin Quiz Management
     Route::get('/quizzes', [AdminQuizController::class, 'index']);
-    Route::get('/quizzes/{id}', [AdminQuizController::class, 'show']);
     Route::get('/quizzes/analytics/dashboard', [AdminQuizController::class, 'analytics']);
+    Route::get('/quizzes/{id}', [AdminQuizController::class, 'show']);
     Route::get('/quizzes/{id}/export', [AdminQuizController::class, 'exportQuizData']);
     Route::delete('/quiz-submissions/{id}', [AdminQuizController::class, 'deleteSubmission']);
     Route::delete('/quiz-submissions', [AdminQuizController::class, 'bulkDeleteSubmissions']);

@@ -56,22 +56,39 @@ class AdminController extends Controller
     $totalEvents = Event::count();
     $pendingApplications = CommunityMembership::where('status', 'pending')->count();
 
+    // Calculate percentage changes from last month
+    $lastMonth = now()->subMonth();
+
+    $usersLastMonth = User::where('created_at', '<', $lastMonth)->count();
+    $userChange = $usersLastMonth > 0 ? (($totalUsers - $usersLastMonth) / $usersLastMonth) * 100 : 0;
+
+    $communitiesLastMonth = Community::where('created_at', '<', $lastMonth)->count();
+    $communityChange = $communitiesLastMonth > 0 ? (($totalCommunities - $communitiesLastMonth) / $communitiesLastMonth) * 100 : 0;
+
+    $pendingLastMonth = CommunityMembership::where('status', 'pending')
+      ->where('created_at', '<', $lastMonth)->count();
+    $pendingChange = $pendingLastMonth > 0 ? (($pendingApplications - $pendingLastMonth) / $pendingLastMonth) * 100 : 0;
+
+    $activeEvents = Event::where('start_datetime', '>=', now())->count();
+    $eventsLastMonth = Event::where('created_at', '<', $lastMonth)->count();
+    $eventChange = $eventsLastMonth > 0 ? (($activeEvents - $eventsLastMonth) / $eventsLastMonth) * 100 : 0;
+
     $stats = [
       'totalUsers' => [
         'value' => $totalUsers,
-        'change' => 12.5
+        'change' => round($userChange, 1)
       ],
       'totalCommunities' => [
         'value' => $totalCommunities,
-        'change' => 5.2
+        'change' => round($communityChange, 1)
       ],
       'pendingApplications' => [
         'value' => $pendingApplications,
-        'change' => -2.1
+        'change' => round($pendingChange, 1)
       ],
       'activeEvents' => [
-        'value' => Event::where('start_datetime', '>=', now())->count(),
-        'change' => 8.0
+        'value' => $activeEvents,
+        'change' => round($eventChange, 1)
       ]
     ];
 
@@ -132,7 +149,94 @@ class AdminController extends Controller
   }
 
   /**
-   * Get pending applications
+   * Get all users for admin management
+   */
+  public function getUsers()
+  {
+    $check = $this->checkAdminRole();
+    if ($check) return $check;
+
+    $users = User::latest()
+      ->get(['id', 'first_name', 'last_name', 'nickname', 'email', 'created_at', 'profile_picture'])
+      ->map(function ($user) {
+        return [
+          'id' => $user->id,
+          'first_name' => $user->first_name,
+          'last_name' => $user->last_name,
+          'name' => $user->first_name . ' ' . $user->last_name,
+          'nickname' => $user->nickname,
+          'email' => $user->email,
+          'created_at' => $user->created_at,
+          'joinDate' => $user->created_at->format('Y-m-d'),
+          'status' => 'Active',
+          'profile_picture' => $user->profile_picture ?? '/placeholder.svg?height=48&width=48'
+        ];
+      });
+
+    return response()->json($users);
+  }
+
+  /**
+   * Get all communities for admin management
+   */
+  public function getCommunities()
+  {
+    $check = $this->checkAdminRole();
+    if ($check) return $check;
+
+    $communities = Community::with(['creator', 'memberships'])
+      ->latest()
+      ->get()
+      ->map(function ($community) {
+        return [
+          'id' => $community->id,
+          'community' => $community->community,
+          'name' => $community->community,
+          'description' => $community->description,
+          'creator' => $community->creator ?
+            $community->creator->first_name . ' ' . $community->creator->last_name :
+            'Unknown',
+          'member_count' => $community->memberships()->count(),
+          'members' => $community->memberships()->count(),
+          'created_at' => $community->created_at,
+          'createdDate' => $community->created_at->format('Y-m-d')
+        ];
+      });
+
+    return response()->json($communities);
+  }
+
+  /**
+   * Get all events for admin management
+   */
+  public function getEvents()
+  {
+    $check = $this->checkAdminRole();
+    if ($check) return $check;
+
+    $events = Event::with(['community', 'registrations'])
+      ->latest()
+      ->get()
+      ->map(function ($event) {
+        return [
+          'id' => $event->id,
+          'event' => $event->event,
+          'title' => $event->event,
+          'description' => $event->description,
+          'start_datetime' => $event->start_datetime,
+          'end_datetime' => $event->end_datetime,
+          'location' => $event->location,
+          'community' => $event->community->community ?? 'N/A',
+          'registrations_count' => $event->registrations()->count(),
+          'created_at' => $event->created_at
+        ];
+      });
+
+    return response()->json($events);
+  }
+
+  /**
+   * Get pending community applications for admin moderation
    */
   public function getPendingApplications()
   {
@@ -143,102 +247,28 @@ class AdminController extends Controller
       ->where('status', 'pending')
       ->latest()
       ->get()
-      ->map(function ($application) {
+      ->map(function ($membership) {
         return [
-          'id' => $application->id,
-          'user_name' => $application->user->first_name . ' ' . $application->user->last_name,
-          'user_nickname' => $application->user->nickname,
-          'community_name' => $application->community->community,
-          'applied_date' => $application->created_at->format('Y-m-d H:i'),
+          'id' => $membership->id,
+          'user' => [
+            'id' => $membership->user->id,
+            'first_name' => $membership->user->first_name,
+            'last_name' => $membership->user->last_name,
+            'name' => $membership->user->first_name . ' ' . $membership->user->last_name,
+            'email' => $membership->user->email,
+          ],
+          'community' => [
+            'id' => $membership->community->id,
+            'name' => $membership->community->community,
+            'community' => $membership->community->community,
+          ],
+          'status' => $membership->status,
+          'created_at' => $membership->created_at,
+          'application_message' => $membership->application_message
         ];
       });
 
     return response()->json($pendingApplications);
-  }
-  /**
-   * Get all events for admin management
-   */
-  public function getEvents()
-  {
-    $check = $this->checkAdminRole();
-    if ($check) return $check;
-
-    $events = Event::with(['community'])
-      ->latest()
-      ->get()
-      ->map(function ($event) {
-        return [
-          'id' => $event->id,
-          'event' => $event->event,
-          'cover_image' => $event->cover_image_url, // Use the URL
-          'community_id' => $event->community_id,
-          'community' => $event->community ? [
-            'id' => $event->community->id,
-            'community' => $event->community->community
-          ] : null,
-          'description' => $event->description,
-          'start_datetime' => $event->start_datetime,
-          'location' => $event->location,
-          'created_at' => $event->created_at
-        ];
-      });
-
-    return response()->json(['events' => $events]);
-  }
-  /**
-   * Get all users for admin management
-   */
-  public function getUsers()
-  {
-    $check = $this->checkAdminRole();
-    if ($check) return $check;
-
-    $users = User::select([
-        'id', 
-        'first_name', 
-        'last_name', 
-        'email', 
-        'nickname',
-        'profile_picture', // Add this field
-        'created_at'
-      ])
-      ->latest()
-      ->get()
-      ->map(function ($user) {
-        return [
-          'id' => $user->id,
-          'first_name' => $user->first_name,
-          'last_name' => $user->last_name,
-          'email' => $user->email,
-          'nickname' => $user->nickname,
-          'profile_picture' => $user->profile_picture_url, // Use the URL
-          'created_at' => $user->created_at
-        ];
-      });
-
-    return response()->json(['users' => $users]);
-  }
-  /**
-   * Get communities for admin management
-   */
-  public function getCommunities()
-  {
-    $check = $this->checkAdminRole();
-    if ($check) return $check;
-
-    $communities = Community::latest()
-      ->get(['id', 'community', 'logo', 'about', 'created_at']) // Use correct column names
-      ->map(function ($community) {
-        return [
-          'id' => $community->id,
-          'community' => $community->community, // Use correct field name
-          'logo' => $community->logo_url, // Use the URL
-          'about' => $community->about, // Use correct field name
-          'created_at' => $community->created_at
-        ];
-      });
-
-    return response()->json(['communities' => $communities]);
   }
 
   /**
@@ -257,8 +287,8 @@ class AdminController extends Controller
     $registrations = $event->registrations;
     $checkedInCount = $registrations->where('checked_in_at', '!=', null)->count();
     $totalRegistrations = $registrations->count();
-    
-    $attendanceRate = $totalRegistrations > 0 ? 
+
+    $attendanceRate = $totalRegistrations > 0 ?
       round(($checkedInCount / $totalRegistrations) * 100, 2) : 0;
 
     $recentCheckIns = $registrations
